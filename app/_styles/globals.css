@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  /* Sembunyikan semua elemen saat print */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Tampilkan hanya struk dan isinya */
+  #struk-print,
+  #struk-print * {
+    visibility: visible;
+  }
+
+  /* Atur posisi struk supaya memenuhi halaman cetak */
+  #struk-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hilangkan bayangan dan border cetak jika ada */
+  #struk-print {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Hilangkan tombol cetak */
+  .print\\:hidden {
+    display: none !important;
+  }
+}
