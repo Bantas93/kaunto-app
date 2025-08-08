@@ -38,14 +38,25 @@ Aplikasi ini dikembangkan untuk tujuan pembelajaran dan penggunaan pribadi. Sila
 
 ## 📸 Preview Aplikasi
 
+Form Login :
 ![Tampilan Form Login](./public/images/Form_Login.png)
+Dashboard :
 ![Tampilan Dashboard](./public/images/Dashboard.png)
+Transaksi :
 ![Tampilan Transaksi](./public/images/Transaksi.png)
+Data User :
 ![Tampilan Data User](./public/images/Data_User.png)
+Daftar Produk :
 ![Tampilan Daftar Produk](./public/images/Daftar_Produk.png)
+Histori Transaksi :
 ![Tampilan Histori Transaksi](./public/images/Histori_Transaksi.png)
+Laporan Stok :
 ![Tampilan Laporan Stok](./public/images/Laporan_Stok.png)
+Form Input User :
 ![Tampilan Form Input User](./public/images/Form_Input_User.png)
+Input Data Diskon :
 ![Tampilan Form Input Data Diskon](./public/images/Form_Input_Data_Diskon.png)
+Data Produk :
 ![Tampilan Form Input Data Produk](./public/images/Form_Input_Produk.png)
+Data Diskon :
 ![Tampilan Data Diskon](./public/images/Data_Diskon.png)
