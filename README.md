@@ -35,3 +35,17 @@ npm run dev
 Aplikasi ini dikembangkan untuk tujuan pembelajaran dan penggunaan pribadi. Silakan modifikasi sesuai kebutuhan Anda.
 
 ---
+
+## 📸 Preview Aplikasi
+
+![Tampilan Form Login](./public/images/Form_Login.png)
+![Tampilan Dashboard](./public/images/Dashboard.png)
+![Tampilan Transaksi](./public/images/Transaksi.png)
+![Tampilan Data User](./public/images/Data_User.png)
+![Tampilan Daftar Produk](./public/images/Daftar_Produk.png)
+![Tampilan Histori Transaksi](./public/images/Histori_Transaksi.png)
+![Tampilan Laporan Stok](./public/images/Laporan_Stok.png)
+![Tampilan Form Input User](./public/images/Form_Input_User.png)
+![Tampilan Form Input Data Diskon](./public/images/Form_Input_Data_Diskon.png)
+![Tampilan Form Input Data Produk](./public/images/Form_Input_Produk.png)
+![Tampilan Data Diskon](./public/images/Data_Diskon.png)
