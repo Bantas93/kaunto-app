@@ -41,11 +41,7 @@ export async function POST(req) {
 
     if (!result.success) {
       return NextResponse.json(
-        {
-          error: "Failed to save transaction.",
-          detail:
-            process.env.NODE_ENV === "development" ? result.error : undefined,
-        },
+        { error: "Failed to save transaction.", detail: result.error },
         { status: 500 }
       );
     }
