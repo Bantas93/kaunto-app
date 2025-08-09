@@ -1,40 +1,44 @@
-import db from "@/app/lib/db";
+// api/product/delete/route.js
+
+import { NextResponse } from "next/server";
+import { supabase } from "@/app/lib/supabase";
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { product_id } = body;
+    const { product_id } = await req.json();
 
-    const deleteImageQuery = `
-      DELETE FROM product_image
-      WHERE product_id = ?
-    `;
-    await db.query(deleteImageQuery, [product_id]);
+    // Hapus data terkait
+    await supabase.from("product_image").delete().eq("product_id", product_id);
+    await supabase
+      .from("product_discount")
+      .delete()
+      .eq("product_id", product_id);
+    await supabase
+      .from("imported_stock_history")
+      .delete()
+      .eq("product_id", product_id);
 
-    const deleteProductDiscount = `
-      DELETE FROM product_discount
-      WHERE product_id = ?
-    `;
-    await db.query(deleteProductDiscount, [product_id]);
+    // Hapus produk utama
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("product_id", product_id);
 
-    const deleteImportedStory = `
-      DELETE FROM imported_stock_history
-      WHERE product_id = ?
-    `;
-    await db.query(deleteImportedStory, [product_id]);
+    if (error) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: 400 }
+      );
+    }
 
-    const query = `
-      DELETE FROM products
-      WHERE product_id = ?
-    `;
-
-    const [result] = await db.query(query, [product_id]);
-
-    return new Response(
-      JSON.stringify({ success: true, message: "Hapus berhasil!" }),
+    return NextResponse.json(
+      { success: true, message: "Hapus berhasil!" },
       { status: 200 }
     );
   } catch (err) {
-    throw new Error("Gagal menghapus produk", err);
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus produk", error: err.message },
+      { status: 500 }
+    );
   }
 }

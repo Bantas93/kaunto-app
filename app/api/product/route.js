@@ -1,6 +1,6 @@
 // app/api/product/route.js
 import { NextResponse } from "next/server";
-import db from "@/app/lib/db";
+import { supabase } from "@/app/lib/supabase";
 import sharp from "sharp";
 
 export async function POST(req) {
@@ -40,20 +40,24 @@ export async function POST(req) {
       });
     }
 
-    const [existingBySKU] = await db.query(
-      "SELECT * FROM products WHERE sku = ?",
-      [sku]
-    );
-    const [existingByName] = await db.query(
-      "SELECT * FROM products WHERE name = ?",
-      [name]
-    );
+    // Cek produk existing
+    const { data: existingBySKU, error: errSku } = await supabase
+      .from("products")
+      .select("*")
+      .eq("sku", sku);
+    if (errSku) throw errSku;
 
+    const { data: existingByName, error: errName } = await supabase
+      .from("products")
+      .select("*")
+      .eq("name", name);
+    if (errName) throw errName;
+
+    // Proses image
     let buffer = null,
       filename = null,
       mime = null,
       size = null;
-
     const imageProvided = image && typeof image.arrayBuffer === "function";
 
     if (imageProvided) {
@@ -74,17 +78,15 @@ export async function POST(req) {
         });
       }
 
-      // Process image dengan sharp
       const arrayBuffer = await image.arrayBuffer();
       buffer = await sharp(Buffer.from(arrayBuffer))
         .resize({ width: 800, withoutEnlargement: true })
         .toFormat("webp")
         .toBuffer();
 
-      // Update metadata
       filename = image.name.replace(/\.[^/.]+$/, "") + ".webp";
       mime = "image/webp";
-      size = buffer.length; // Ukuran file setelah di-compress
+      size = buffer.length;
     } else if (!allowWithoutImage) {
       return NextResponse.json({
         success: false,
@@ -96,6 +98,7 @@ export async function POST(req) {
     let productId;
     let message = "";
 
+    // Update stok produk yang sama
     if (
       existingBySKU.length > 0 &&
       existingByName.length > 0 &&
@@ -103,67 +106,110 @@ export async function POST(req) {
     ) {
       productId = existingBySKU[0].product_id;
 
-      await db.query(
-        `UPDATE products SET price = ?, stock = stock + ?, description = ?, updated_date = NOW() WHERE product_id = ?`,
-        [price, stock, description, productId]
-      );
+      const { error: errUpdate } = await supabase
+        .from("products")
+        .update({
+          price,
+          stock: existingBySKU[0].stock + stock,
+          description,
+          updated_date: new Date(),
+        })
+        .eq("product_id", productId);
+      if (errUpdate) throw errUpdate;
 
-      await db.query(
-        `INSERT INTO imported_stock_history (product_id, total_imported, imported_date) VALUES (?, ?, NOW())`,
-        [productId, stock]
-      );
+      await supabase.from("imported_stock_history").insert([
+        {
+          product_id: productId,
+          total_imported: stock,
+          imported_date: new Date(),
+        },
+      ]);
 
       if (imageProvided) {
-        await db.query(`DELETE FROM product_image WHERE product_id = ?`, [
-          productId,
-        ]);
+        await supabase
+          .from("product_image")
+          .delete()
+          .eq("product_id", productId);
 
-        await db.query(
-          `INSERT INTO product_image (product_id, image, file_name, mime_type, bytes_size) VALUES (?, ?, ?, ?, ?)`,
-          [productId, buffer, filename, mime, size]
-        );
+        await supabase.from("product_image").insert([
+          {
+            product_id: productId,
+            image: buffer,
+            file_name: filename,
+            mime_type: mime,
+            bytes_size: size,
+          },
+        ]);
       }
 
       message = "Produk berhasil diperbarui.";
-    } else if (existingBySKU.length > 0 && existingByName.length === 0) {
+    }
+    // SKU cocok tapi nama beda
+    else if (existingBySKU.length > 0 && existingByName.length === 0) {
       return NextResponse.json({
         success: false,
         message: "Nama produk tidak sesuai dengan SKU.",
       });
-    } else if (existingByName.length > 0 && existingBySKU.length === 0) {
+    }
+    // Nama cocok tapi SKU beda
+    else if (existingByName.length > 0 && existingBySKU.length === 0) {
       return NextResponse.json({
         success: false,
         message: "SKU tidak sesuai dengan nama produk.",
       });
-    } else {
-      const [result] = await db.query(
-        `INSERT INTO products (name, sku, price, stock, description, created_date, updated_date)
-         VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-        [name, sku, price, stock, description]
-      );
+    }
+    // Produk baru
+    else {
+      const { data: inserted, error: errInsert } = await supabase
+        .from("products")
+        .insert([
+          {
+            name,
+            sku,
+            price,
+            stock,
+            description,
+            created_date: new Date(),
+            updated_date: new Date(),
+          },
+        ])
+        .select();
+      if (errInsert) throw errInsert;
 
-      productId = result.insertId;
+      productId = inserted[0].product_id;
       message = "Produk berhasil ditambahkan.";
 
-      await db.query(
-        `INSERT INTO imported_stock_history (product_id, total_imported, imported_date)
-         VALUES (?, ?, NOW())`,
-        [productId, stock]
-      );
+      await supabase.from("imported_stock_history").insert([
+        {
+          product_id: productId,
+          total_imported: stock,
+          imported_date: new Date(),
+        },
+      ]);
 
-      await db.query(
-        `INSERT INTO product_image (product_id, image, file_name, mime_type, bytes_size)
-         VALUES (?, ?, ?, ?, ?)`,
-        [productId, buffer, filename, mime, size]
-      );
+      if (imageProvided) {
+        await supabase.from("product_image").insert([
+          {
+            product_id: productId,
+            image: buffer,
+            file_name: filename,
+            mime_type: mime,
+            bytes_size: size,
+          },
+        ]);
+      }
     }
 
     if (isDiscountValid) {
-      await db.query(
-        `INSERT INTO product_discount (product_id, start_date, end_date, discount_amount, original_price)
-         VALUES (?, ?, ?, ?, ?)`,
-        [productId, start_date, end_date, discount_amount, original_price]
-      );
+      await supabase.from("product_discount").insert([
+        {
+          product_id: productId,
+          start_date,
+          end_date,
+          discount_amount,
+          original_price,
+        },
+      ]);
     }
 
     return NextResponse.json({ success: true, message });

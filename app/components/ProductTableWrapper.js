@@ -19,11 +19,20 @@ import { useMemo } from "react";
 export default function ProductTableWrapper({ keyword }) {
   const { items, isLoading, refreshProducts } = useProducts();
 
+  // const filteredItems = useMemo(
+  //   () =>
+  //     items.filter((product) =>
+  //       product.name.toLowerCase().includes(keyword.toLowerCase())
+  //     ),
+  //   [items, keyword]
+  // );
   const filteredItems = useMemo(
     () =>
-      items.filter((product) =>
-        product.name.toLowerCase().includes(keyword.toLowerCase())
-      ),
+      Array.isArray(items)
+        ? items.filter((product) =>
+            product.name.toLowerCase().includes(keyword.toLowerCase())
+          )
+        : [],
     [items, keyword]
   );
 

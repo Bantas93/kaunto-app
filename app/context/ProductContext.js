@@ -1,12 +1,5 @@
-// app/components/ProductContext.js
 "use client";
-import {
-  getAllData,
-  getProducts,
-  getProductsOption,
-} from "../lib/data-service";
-
-const { createContext, useState, useEffect, useContext } = require("react");
+import { createContext, useState, useEffect, useContext } from "react";
 
 const ProductContext = createContext();
 
@@ -16,18 +9,29 @@ export const ProductProvider = ({ children }) => {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const API_BASE = "/api/product"; // endpoint Next.js API (bisa juga pakai Supabase REST URL)
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getAllData();
-        setStats(data[0]);
-        const x = await getProductsOption();
-        setProducts(x);
-        const i = await getProducts();
-        setItems(i);
+        // GET semua data statistik
+        const statsRes = await fetch(`${API_BASE}/stats`);
+        const statsData = await statsRes.json();
+        setStats(statsData);
+
+        // GET produk untuk dropdown
+        const optionRes = await fetch(`${API_BASE}/options`);
+        const optionData = await optionRes.json();
+        setProducts(optionData);
+
+        // GET daftar produk lengkap
+        const itemsRes = await fetch(`${API_BASE}/list`);
+        const itemsData = await itemsRes.json();
+        setItems(itemsData);
+
         setIsLoading(false);
       } catch (err) {
-        throw new Error("Gagal mengambil data product", err);
+        console.error("Gagal mengambil data product", err);
       }
     };
     fetchData();
@@ -35,8 +39,9 @@ export const ProductProvider = ({ children }) => {
 
   const refreshProducts = async () => {
     setIsLoading(true);
-    const updatedItems = await getProducts();
-    setItems(updatedItems);
+    const itemsRes = await fetch(`${API_BASE}/list`);
+    const itemsData = await itemsRes.json();
+    setItems(itemsData);
     setIsLoading(false);
   };
 
