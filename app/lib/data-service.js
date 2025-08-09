@@ -42,6 +42,93 @@ export const getProducts = async function () {
   }
 };
 
+// Ambil semua produk + diskon (LEFT JOIN)
+export const getProductsOption = async function () {
+  try {
+    const { data: products, error: prodError } = await supabase
+      .from("products")
+      .select(
+        `
+        product_id,
+        name,
+        sku,
+        price,
+        stock,
+        description,
+        product_discount (
+          discount_amount,
+          original_price,
+          start_date,
+          end_date
+        )
+      `
+      )
+      .order("name", { ascending: true });
+
+    if (prodError) throw prodError;
+
+    // Flatten relasi product_discount supaya mirip hasil query MySQL
+    return products.map((p) => ({
+      product_id: p.product_id,
+      name: p.name,
+      sku: p.sku,
+      price: p.price,
+      discount_amount: p.product_discount?.[0]?.discount_amount || null,
+      original_price: p.product_discount?.[0]?.original_price || null,
+      start_date: p.product_discount?.[0]?.start_date || null,
+      end_date: p.product_discount?.[0]?.end_date || null,
+      stock: p.stock,
+      description: p.description,
+    }));
+  } catch (error) {
+    console.error("Gagal mengambil produk dengan diskon:", error.message);
+    throw new Error("Produk diskon tidak dapat dimuat");
+  }
+};
+
+// Ambil produk yang hanya ada di tabel diskon
+export const getProductsWithDiscount = async function () {
+  try {
+    const { data: discounts, error: discError } = await supabase.from(
+      "product_discount"
+    ).select(`
+        product_id,
+        discount_amount,
+        original_price,
+        start_date,
+        end_date,
+        products (
+          name,
+          sku,
+          price
+        )
+      `);
+
+    if (discError) throw discError;
+
+    // Sort manual berdasarkan nama produk
+    const sorted = (discounts || []).sort((a, b) => {
+      const nameA = a.products?.name?.toLowerCase() || "";
+      const nameB = b.products?.name?.toLowerCase() || "";
+      return nameA.localeCompare(nameB);
+    });
+
+    return sorted.map((d) => ({
+      product_id: d.product_id,
+      name: d.products?.name || null,
+      sku: d.products?.sku || null,
+      price: d.products?.price || null,
+      discount_amount: d.discount_amount,
+      original_price: d.original_price,
+      start_date: d.start_date,
+      end_date: d.end_date,
+    }));
+  } catch (error) {
+    console.error("Gagal mengambil produk dengan diskon:", error.message);
+    throw new Error("Produk diskon tidak dapat dimuat");
+  }
+};
+
 export const createProduct = async function (product) {
   try {
     const created_date = new Date();
