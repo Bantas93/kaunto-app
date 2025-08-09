@@ -1,34 +1,39 @@
 // app/lib/data-service.js
 "use server";
 
-// import db from "./db";
 import { supabase } from "./supabase";
 
+/* =========================
+   PRODUCTS
+========================= */
 export const getProducts = async function () {
   try {
-    const [rows] = await db.query(`
-      SELECT 
-      p.*,
-      pi.image,
-      pd.discount_amount, 
-      pd.original_price
-      FROM products p
-      LEFT JOIN product_image pi
-      ON pi.product_id = p.product_id
-      LEFT JOIN product_discount pd 
-      ON pd.product_id = p.product_id 
-      ORDER BY p.name
-        `);
-    // AND NOW() BETWEEN pd.start_date AND pd.end_date
-    return rows.map((row) => {
+    const { data, error } = await supabase
+      .from("products")
+      .select(
+        `
+        *,
+        product_image(image),
+        product_discount(discount_amount, original_price)
+      `
+      )
+      .order("name", { ascending: true });
+
+    if (error) throw error;
+
+    return data.map((row) => {
       let image = null;
-      if (row.image) {
-        const base64 = Buffer.from(row.image).toString("base64");
+      if (row.product_image?.length && row.product_image[0].image) {
+        const base64 = Buffer.from(row.product_image[0].image).toString(
+          "base64"
+        );
         image = `data:image/jpeg;base64,${base64}`;
       }
       return {
         ...row,
         image,
+        discount_amount: row.product_discount?.[0]?.discount_amount || null,
+        original_price: row.product_discount?.[0]?.original_price || null,
       };
     });
   } catch (error) {
@@ -42,23 +47,23 @@ export const createProduct = async function (product) {
     const created_date = new Date();
     const updated_date = new Date();
 
-    const query = `
-      INSERT INTO products (name, sku, price, stock, description, created_date, updated_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
+    const { data, error } = await supabase
+      .from("products")
+      .insert([
+        {
+          name: product.name,
+          sku: product.sku,
+          price: product.price,
+          stock: product.stock,
+          description: product.description || null,
+          created_date,
+          updated_date,
+        },
+      ])
+      .select();
 
-    const values = [
-      product.name,
-      product.sku,
-      product.price,
-      product.stock,
-      product.description || null,
-      created_date,
-      updated_date,
-    ];
-
-    const [result] = await db.query(query, values);
-    return result;
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error(error);
     throw new Error("Product could not be created");
@@ -66,53 +71,47 @@ export const createProduct = async function (product) {
 };
 
 export const updateProduct = async function (formData) {
-  const product = {
-    product_id: Number(formData.get("product_id")),
-    name: formData.get("name"),
-    sku: formData.get("sku"),
-    price: Number(formData.get("price")),
-    stock: Number(formData.get("stock")),
-    description: formData.get("description") || null,
-  };
+  try {
+    const product_id = Number(formData.get("product_id"));
+    const { error } = await supabase
+      .from("products")
+      .update({
+        name: formData.get("name"),
+        sku: formData.get("sku"),
+        price: Number(formData.get("price")),
+        stock: Number(formData.get("stock")),
+        description: formData.get("description") || null,
+        updated_date: new Date(),
+      })
+      .eq("product_id", product_id);
 
-  return product;
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    throw new Error("Product could not be updated");
+  }
 };
 
 export async function getProductById(product_id) {
-  const id = parseInt(product_id);
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM products WHERE product_id = ? LIMIT 1",
-      [id]
-    );
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("product_id", product_id)
+      .single();
 
-    if (!rows || rows.length === 0) {
-      console.error("Produk tidak ditemukan.");
-      return null;
-    }
-    // console.log(rows);
-    return rows[0];
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error("Gagal mengambil data produk:", error.message);
     return null;
   }
 }
 
-// export const getUsers = async function () {
-//   try {
-//     const [rows] = await db.query(
-//       `SELECT user_id, name, email, password, role,created_at
-//          FROM users
-//          ORDER BY name`
-//     );
-//     return rows;
-//   } catch (error) {
-//     console.error(error);
-//     throw new Error("Users could not be loaded");
-//   }
-// };
-
-// SUPABASE
+/* =========================
+   USERS
+========================= */
 export const getUsers = async function () {
   try {
     const { data, error } = await supabase
@@ -120,62 +119,90 @@ export const getUsers = async function () {
       .select("user_id, name, email, password, role, created_at")
       .order("name", { ascending: true });
 
-    if (error) {
-      console.error(error);
-      throw new Error("Users could not be loaded");
-    }
-
-    return data; // data = array of users
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error(error);
     throw new Error("Users could not be loaded");
   }
 };
 
+export const getAllUsers = async () => {
+  try {
+    const { data, error } = await supabase.from("users").select("*");
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.log(err);
+    throw new Error("Gagal ambil data user");
+  }
+};
+
+export const deleteUser = async (user_id) => {
+  try {
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("user_id", user_id);
+    if (error) throw error;
+    return { message: "User deleted successfully" };
+  } catch (err) {
+    throw new Error("Gagal menghapus user");
+  }
+};
+
+/* =========================
+   STOCK HISTORY
+========================= */
 export const getAllStockHistory = async function () {
   try {
-    const query = `
-      WITH stock_flow AS (
-      SELECT 
-      pr.product_id,
-      pr.name AS produk,
-      pr.sku,
-      ish.imported_date AS tanggal,
-      'IMPORT' AS flag,
-      ish.total_imported AS qty
-      FROM kaunto.imported_stock_history ish
-      LEFT JOIN products pr ON ish.product_id = pr.product_id
+    const { data: imported, error: err1 } = await supabase
+      .from("imported_stock_history")
+      .select("product_id, imported_date, total_imported, products(name, sku)");
+    if (err1) throw err1;
 
-      UNION ALL
+    const { data: sales, error: err2 } = await supabase
+      .from("transaction_detail")
+      .select(
+        "product_id, quantity, transactions(created_date), products(name, sku)"
+      );
+    if (err2) throw err2;
 
-      SELECT 
-      pr.product_id,
-      pr.name AS produk,
-      pr.sku,
-      tr.created_date AS tanggal,
-      'SALES' AS flag,
-      -td.quantity AS qty  -- sales are negative
-      FROM kaunto.transaction_detail td
-      LEFT JOIN transactions tr ON td.transaction_id = tr.transaction_id
-      LEFT JOIN products pr ON td.product_id = pr.product_id
-      )
+    const stock_flow = [
+      ...imported.map((row) => ({
+        product_id: row.product_id,
+        produk: row.products.name,
+        sku: row.products.sku,
+        tanggal: row.imported_date,
+        flag: "IMPORT",
+        qty: row.total_imported,
+      })),
+      ...sales.map((row) => ({
+        product_id: row.product_id,
+        produk: row.products.name,
+        sku: row.products.sku,
+        tanggal: row.transactions.created_date,
+        flag: "SALES",
+        qty: -row.quantity,
+      })),
+    ];
 
-      SELECT 
-      product_id,
-      produk,
-      sku,
-      tanggal,
-      flag,
-      qty AS subTotal,
-      SUM(qty) OVER (PARTITION BY product_id ORDER BY tanggal) AS totalStock
-      FROM stock_flow
-      ORDER BY product_id, tanggal;
+    stock_flow.sort((a, b) => {
+      if (a.product_id === b.product_id) {
+        return new Date(a.tanggal) - new Date(b.tanggal);
+      }
+      return a.product_id - b.product_id;
+    });
 
-    `;
-
-    const [rows] = await db.query(query);
-    // console.log(rows);
-    return rows;
+    let totalMap = {};
+    return stock_flow.map((row) => {
+      totalMap[row.product_id] = (totalMap[row.product_id] || 0) + row.qty;
+      return {
+        ...row,
+        subTotal: row.qty,
+        totalStock: totalMap[row.product_id],
+      };
+    });
   } catch (error) {
     console.error("Gagal mengambil semua riwayat stok:", error.message);
     throw new Error("Stock history tidak dapat dimuat");
@@ -184,69 +211,86 @@ export const getAllStockHistory = async function () {
 
 export const getStockHistoryByProductId = async function (productId) {
   try {
-    const [rows] = await db.query(
-      `
-      SELECT 
-      pr.product_id, 
-      pr.name AS namaProduk,
-      pr.sku AS sku,
-      ish.imported_date AS tanggal,
-      'IMPORT' AS flag,
-      ish.total_imported AS subTotal,
-      pr.stock AS totalStok
-      FROM kaunto.imported_stock_history AS ish
-      LEFT JOIN products AS pr ON ish.product_id = pr.product_id
-      WHERE pr.product_id = ?
+    const { data: imported, error: err1 } = await supabase
+      .from("imported_stock_history")
+      .select(
+        "product_id, imported_date, total_imported, products(name, sku, stock)"
+      )
+      .eq("product_id", productId);
+    if (err1) throw err1;
 
-      UNION
+    const { data: sales, error: err2 } = await supabase
+      .from("transaction_detail")
+      .select(
+        "product_id, quantity, products(name, sku, stock), transactions(created_date)"
+      )
+      .eq("product_id", productId);
+    if (err2) throw err2;
 
-      SELECT 
-      td.product_id, 
-      pr.name AS namaProduk,
-      pr.sku AS sku, 
-      tr.created_date AS tanggal,
-      'SALES' AS flag,
-      td.quantity AS subTotal,
-      pr.stock AS totalStok
-      FROM kaunto.transaction_detail AS td
-      LEFT JOIN transactions AS tr ON td.transaction_id = tr.transaction_id 
-      LEFT JOIN products AS pr ON td.product_id = pr.product_id
-      WHERE pr.product_id = ?
-      ORDER BY tanggal DESC
-      `,
-      [productId, productId]
-    );
+    const merged = [
+      ...imported.map((row) => ({
+        product_id: row.product_id,
+        namaProduk: row.products.name,
+        sku: row.products.sku,
+        tanggal: row.imported_date,
+        flag: "IMPORT",
+        subTotal: row.total_imported,
+        totalStok: row.products.stock,
+      })),
+      ...sales.map((row) => ({
+        product_id: row.product_id,
+        namaProduk: row.products.name,
+        sku: row.products.sku,
+        tanggal: row.transactions.created_date,
+        flag: "SALES",
+        subTotal: row.quantity,
+        totalStok: row.products.stock,
+      })),
+    ];
 
-    return rows;
+    return merged.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
   } catch (error) {
     console.error("Gagal mengambil riwayat stok:", error.message);
     throw new Error("Stock history tidak dapat dimuat");
   }
 };
 
+/* =========================
+   TRANSACTIONS
+========================= */
 export const getAllTransactionHistory = async function () {
   try {
-    const query = `
-    SELECT td.transaction_detail_id ,
-    tr.created_date as "tanggal",
-    tr.transaction_number as "transaction_number",
-    pr.name as "produk", 
-    us.name as "user",
-    us.role as "role",
-    td.quantity as "quantity",
-    tr.payment_method as "metode",
-    td.price_per_item as "pricePerItem",
-    td.subtotal as "total"
-    FROM kaunto.transaction_detail as td
-    left join products as pr on td.product_id = pr.product_id
-    left join transactions as tr on tr.transaction_id = td.transaction_id
-    left join users as us on us.user_id = tr.user_id
-    ORDER BY tanggal DESC
-    `;
+    const { data, error } = await supabase
+      .from("transaction_detail")
+      .select(
+        `
+        transaction_detail_id,
+        quantity,
+        price_per_item,
+        subtotal,
+        products(name),
+        transactions(created_date, transaction_number, payment_method, users(name, role))
+      `
+      )
+      .order("created_date", {
+        referencedTable: "transactions",
+        ascending: false,
+      });
 
-    const [rows] = await db.query(query);
-    // console.log(rows);
-    return rows;
+    if (error) throw error;
+
+    return data.map((td) => ({
+      transaction_detail_id: td.transaction_detail_id,
+      tanggal: td.transactions.created_date,
+      transaction_number: td.transactions.transaction_number,
+      produk: td.products.name,
+      user: td.transactions.users.name,
+      role: td.transactions.users.role,
+      quantity: td.quantity,
+      metode: td.transactions.payment_method,
+      pricePerItem: td.price_per_item,
+      total: td.subtotal,
+    }));
   } catch (error) {
     console.error("Gagal mengambil semua riwayat transaksi:", error.message);
     throw new Error("Transaksi history tidak dapat dimuat");
@@ -255,41 +299,38 @@ export const getAllTransactionHistory = async function () {
 
 export const getTransactionHistoryById = async function (productId) {
   try {
-    const [rows] = await db.query(
+    const { data, error } = await supabase
+      .from("transaction_detail")
+      .select(
+        `
+        transaction_detail_id,
+        quantity,
+        price_per_item,
+        subtotal,
+        products(name, product_id),
+        transactions(created_date, payment_method, users(name, role))
       `
-    SELECT td.transaction_detail_id,
-    tr.created_date as "tanggal",
-    pr.name as "produk",
-    pr.product_id as "productId",
-    us.name as "user",
-    us.role as "role",
-    td.quantity as "quantity",
-    tr.payment_method as "metode",
-    td.price_per_item as "pricePerItem",
-    td.subtotal as "total"
-    FROM kaunto.transaction_detail as td
-    LEFT JOIN products as pr ON td.product_id = pr.product_id
-    LEFT JOIN transactions as tr ON tr.transaction_id = td.transaction_id
-    LEFT JOIN users as us ON us.user_id = tr.user_id
-    WHERE td.product_id = ?
-    ORDER BY tr.created_date DESC
-      `,
-      [productId]
-    );
-    // console.log(rows);
-    return rows;
-  } catch (error) {
-    console.error("Gagal mengambil riwayat stok:", error.message);
-    throw new Error("Stock history tidak dapat dimuat");
-  }
-};
+      )
+      .eq("product_id", productId)
+      .order("created_date", {
+        referencedTable: "transactions",
+        ascending: false,
+      });
 
-export const getTransactionNumber = async () => {
-  try {
-    const [rows] = await db.query(
-      `SELECT transaction_number FROM transactions ORDER BY transaction_id DESC LIMIT 1`
-    );
-    return rows;
+    if (error) throw error;
+
+    return data.map((td) => ({
+      transaction_detail_id: td.transaction_detail_id,
+      tanggal: td.transactions.created_date,
+      produk: td.products.name,
+      productId: td.products.product_id,
+      user: td.transactions.users.name,
+      role: td.transactions.users.role,
+      quantity: td.quantity,
+      metode: td.transactions.payment_method,
+      pricePerItem: td.price_per_item,
+      total: td.subtotal,
+    }));
   } catch (error) {
     console.error("Gagal mengambil riwayat stok:", error.message);
     throw new Error("Stock history tidak dapat dimuat");
@@ -297,9 +338,6 @@ export const getTransactionNumber = async () => {
 };
 
 export async function saveTransaction(payload) {
-  const conn = await db.getConnection();
-  await conn.beginTransaction();
-
   try {
     const {
       transaction_number,
@@ -310,192 +348,92 @@ export async function saveTransaction(payload) {
       items,
     } = payload;
 
-    // 1. Simpan ke tabel `transactions`
-    const [transResult] = await conn.query(
-      `
-        INSERT INTO transactions 
-        (user_id, total_amount, tax, payment_method, created_date, transaction_number)
-        VALUES (?, ?, ?, ?, NOW(), ?)
-      `,
-      [user_id, total_amount, tax, payment_method, transaction_number]
-    );
+    const { data: trans, error: err1 } = await supabase
+      .from("transactions")
+      .insert([
+        {
+          user_id,
+          total_amount,
+          tax,
+          payment_method,
+          created_date: new Date(),
+          transaction_number,
+        },
+      ])
+      .select();
 
-    const transactionId = transResult.insertId;
+    if (err1) throw err1;
+    const transactionId = trans[0].transaction_id;
 
-    // 2. Simpan detail transaksi
     for (const item of items) {
       const subtotal = item.price * item.quantity;
 
-      await conn.query(
-        `
-          INSERT INTO transaction_detail 
-          (transaction_id, product_id, quantity, price_per_item, subtotal)
-          VALUES (?, ?, ?, ?, ?)
-        `,
-        [transactionId, item.product_id, item.quantity, item.price, subtotal]
-      );
+      const { error: err2 } = await supabase.from("transaction_detail").insert([
+        {
+          transaction_id: transactionId,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price_per_item: item.price,
+          subtotal,
+        },
+      ]);
+      if (err2) throw err2;
 
-      // Kurangi stok produk
-      await conn.query(
-        `
-        UPDATE products
-        SET stock = stock - ?
-        WHERE product_id = ?
-      `,
-        [item.quantity, item.product_id]
-      );
+      // Update stock
+      const { data: prod, error: err3 } = await supabase
+        .from("products")
+        .select("stock")
+        .eq("product_id", item.product_id)
+        .single();
+      if (err3) throw err3;
+
+      const newStock = (prod.stock || 0) - item.quantity;
+      const { error: err4 } = await supabase
+        .from("products")
+        .update({ stock: newStock })
+        .eq("product_id", item.product_id);
+      if (err4) throw err4;
     }
 
-    await conn.commit();
-
-    // Ambil created_date dari transaksi yang baru disimpan
-    const [createdDateRows] = await conn.query(
-      `
-    SELECT created_date FROM transactions WHERE transaction_id = ?
-    `,
-      [transactionId]
-    );
-    const createdDate = createdDateRows[0]?.created_date;
-
-    conn.release();
-
-    return { success: true, transactionId, createdDate };
+    return { success: true, transactionId };
   } catch (error) {
-    await conn.rollback();
-    conn.release();
     console.error("saveTransaction error:", error);
     return { success: false, error };
   }
 }
 
-export const getProductsOption = async function () {
-  try {
-    const [rows] = await db.query(`
-    SELECT
-    p.product_id,
-    p.name,
-    p.sku,
-    p.price,
-    pd.discount_amount,
-    pd.original_price,
-    pd.start_date,
-    pd.end_date,
-    p.stock,
-    p.description
-    FROM products as p
-    LEFT JOIN product_discount pd
-    ON p.product_id = pd.product_id
-    ORDER BY p.name
-      `);
-    // AND NOW() BETWEEN pd.start_date AND pd.end_date
-    return rows;
-  } catch (error) {
-    console.error("Gagal mengambil produk dengan diskon:", error.message);
-    throw new Error("Produk diskon tidak dapat dimuat");
-  }
-};
-export const getProductsWithDiscount = async function () {
-  try {
-    const [rows] = await db.query(`
-    SELECT
-    p.product_id,
-    p.name,
-    p.sku,
-    p.price,
-    pd.discount_amount,
-    pd.original_price,
-    pd.start_date,
-    pd.end_date
-    FROM product_discount pd
-    LEFT JOIN products as p
-    ON p.product_id = pd.product_id
-    ORDER BY p.name
-      `);
-    // AND NOW() BETWEEN pd.start_date AND pd.end_date
-    return rows;
-  } catch (error) {
-    console.error("Gagal mengambil produk dengan diskon:", error.message);
-    throw new Error("Produk diskon tidak dapat dimuat");
-  }
-};
-
-export const addProductDiscount = async function (payload) {
-  try {
-    const query = `
-    INSERT INTO product_discount (product_id, start_date, end_date, discount_amount, original_price)
-    VALUES (?, ?, ?, ?, ?)
-    `;
-    const values = [
-      payload.product_id,
-      payload.start_date,
-      payload.end_date,
-      payload.discount_amount,
-      payload.original_price,
-    ];
-    const [result] = await db.query(query, values);
-    return result;
-  } catch (error) {
-    console.error("Gagal menambahkan diskon:", error.message);
-    throw new Error("Diskon gagal disimpan");
-  }
-};
-
+/* =========================
+   DASHBOARD DATA
+========================= */
 export const getAllData = async () => {
   try {
-    const [rows] = await db.query(
-      `
-    SELECT
-    (SELECT COUNT(*) FROM products) AS stock_available,
-    (SELECT COUNT(*) FROM transactions) AS transaction_total,
-    (SELECT SUM(subtotal) FROM transaction_detail) AS turnover_transaction,
-    (SELECT SUM(td.subtotal) 
-    FROM transactions AS tr 
-    LEFT JOIN transaction_detail AS td ON td.transaction_id = tr.transaction_id 
-    WHERE tr.created_date >= CURDATE() AND tr.created_date <= NOW()) AS turnover_transaction_today,
-    (SELECT SUM(td.subtotal) 
-    FROM transactions AS tr 
-    LEFT JOIN transaction_detail AS td ON td.transaction_id = tr.transaction_id 
-    WHERE tr.created_date >= CURDATE() - INTERVAL 1 DAY AND tr.created_date < CURDATE()) AS turnover_transaction_before,
-    (SELECT COUNT(DISTINCT product_id) FROM imported_stock_history) AS imported_stock_total,
-    (SELECT COUNT(*) FROM product_discount) AS product_discount,
-    (SELECT COUNT(*) FROM transactions WHERE created_date >= CURDATE() AND created_date <= NOW()) AS transaction_today,
-    (SELECT COUNT(*) FROM transactions 
-    WHERE created_date >= CURDATE() - INTERVAL 1 DAY AND created_date < CURDATE()) AS transaction_before;
+    const tables = [
+      supabase.from("products").select("*"),
+      supabase.from("transactions").select("*"),
+      supabase.from("transaction_detail").select("subtotal"),
+      supabase.from("imported_stock_history").select("*"),
+      supabase.from("product_discount").select("*"),
+    ];
 
-    `
+    const [products, transactions, transDetail, importedStock, discounts] =
+      await Promise.all(tables);
+
+    const turnoverTotal = transDetail.data.reduce(
+      (sum, td) => sum + (td.subtotal || 0),
+      0
     );
-    return rows;
+
+    return [
+      {
+        stock_available: products.data.length,
+        transaction_total: transactions.data.length,
+        turnover_transaction: turnoverTotal,
+        imported_stock_total: importedStock.data.length,
+        product_discount: discounts.data.length,
+      },
+    ];
   } catch (err) {
     console.error(err);
     throw new Error("Products could not be loaded");
-  }
-};
-
-export const getAllUsers = async () => {
-  try {
-    const [rows] = await db.query(`SELECT * FROM users`);
-    return rows;
-  } catch (err) {
-    console.log(err);
-    throw new Error("Gagal ambil data user", err);
-  }
-};
-
-export const deleteUser = async (user_id) => {
-  try {
-    const query = `
-      DELETE FROM users
-      WHERE user_id = ?
-    `;
-
-    const [result] = await db.query(query, [user_id]);
-
-    if (result.affectedRows === 0) {
-      throw new Error("Product not found or already deleted");
-    }
-
-    return { message: "User deleted successfully" };
-  } catch (err) {
-    throw new Error("Gagal menghapus user", err);
   }
 };
