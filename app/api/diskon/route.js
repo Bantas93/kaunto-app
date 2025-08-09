@@ -1,17 +1,16 @@
 // app/api/diskon/route.js
 import { NextResponse } from "next/server";
-import db from "@/app/lib/db";
+import { supabase } from "@/app/lib/supabase";
 
 export async function POST(req) {
   try {
-    const data = await req.json();
     const {
       product_id,
       start_date,
       end_date,
       discount_amount,
       original_price,
-    } = data;
+    } = await req.json();
 
     if (
       !product_id ||
@@ -26,26 +25,28 @@ export async function POST(req) {
       });
     }
 
-    await db.query(
-      `
-      INSERT INTO product_discount 
-      (product_id, start_date, end_date, discount_amount, original_price)
-      VALUES (?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE 
-      start_date = VALUES(start_date),
-      end_date = VALUES(end_date),
-      discount_amount = VALUES(discount_amount),
-      original_price = VALUES(original_price)
-      `,
-      [product_id, start_date, end_date, discount_amount, original_price]
+    // Supabase upsert (insert jika belum ada, update jika sudah ada)
+    const { error } = await supabase.from("product_discount").upsert(
+      [
+        {
+          product_id,
+          start_date,
+          end_date,
+          discount_amount,
+          original_price,
+        },
+      ],
+      { onConflict: "product_id" } // kolom unique/primary key
     );
+
+    if (error) throw error;
 
     return NextResponse.json({
       success: true,
       message: "Diskon berhasil ditambahkan atau diperbarui.",
     });
   } catch (error) {
-    console.error("Gagal menyimpan diskon:", error);
+    console.error("Gagal menyimpan diskon:", error.message);
     return NextResponse.json({
       success: false,
       message: "Terjadi kesalahan saat menyimpan diskon.",

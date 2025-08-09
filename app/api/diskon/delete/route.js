@@ -1,27 +1,28 @@
-import db from "@/app/lib/db";
+// api/diskon/delete/route.js
+import { NextResponse } from "next/server";
+import { supabase } from "@/app/lib/supabase";
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { product_id } = body;
+    const { product_id } = await req.json();
 
-    const deleteImageQuery = `
-      DELETE FROM product_discount
-      WHERE product_id = ?
-    `;
-    await db.query(deleteImageQuery, [product_id]);
+    // Hapus data dari product_discount
+    const { error } = await supabase
+      .from("product_discount")
+      .delete()
+      .eq("product_id", product_id);
 
-    const deleteProductDiscount = `
-      DELETE FROM product_discount
-      WHERE product_id = ?
-    `;
-    await db.query(deleteProductDiscount, [product_id]);
+    if (error) throw error;
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Hapus diskon berhasil!" }),
+    return NextResponse.json(
+      { success: true, message: "Hapus diskon berhasil!" },
       { status: 200 }
     );
   } catch (err) {
-    throw new Error("Gagal menghapus produk diskon", err);
+    console.error("Gagal menghapus produk diskon:", err.message);
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus produk diskon" },
+      { status: 500 }
+    );
   }
 }
