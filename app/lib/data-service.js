@@ -1,7 +1,7 @@
 // app/lib/data-service.js
 "use server";
 
-import db from "./db";
+// import db from "./db";
 import { supabase } from "./supabase";
 
 export const getProducts = async function () {
