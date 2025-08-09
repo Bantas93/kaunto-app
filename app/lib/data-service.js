@@ -258,17 +258,6 @@ export const getStockHistoryByProductId = async function (productId) {
 /* =========================
    TRANSACTIONS
 ========================= */
-// export const getTransactionNumber = async () => {
-//   try {
-//     const [rows] = await db.query(
-//       `SELECT transaction_number FROM transactions ORDER BY transaction_id DESC LIMIT 1`
-//     );
-//     return rows;
-//   } catch (error) {
-//     console.error("Gagal mengambil riwayat stok:", error.message);
-//     throw new Error("Stock history tidak dapat dimuat");
-//   }
-// };
 export const getTransactionNumber = async () => {
   try {
     const { data, error } = await supabase
@@ -279,7 +268,8 @@ export const getTransactionNumber = async () => {
 
     if (error) throw error;
 
-    return data?.[0] || null; // return object pertama atau null kalau kosong
+    // Kembalikan array seperti versi MySQL kamu
+    return data || [];
   } catch (error) {
     console.error("Gagal mengambil nomor transaksi:", error.message);
     throw new Error("Nomor transaksi tidak dapat dimuat");
