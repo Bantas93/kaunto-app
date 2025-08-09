@@ -2,6 +2,7 @@
 "use server";
 
 import db from "./db";
+import { supabase } from "./supabase";
 
 export const getProducts = async function () {
   try {
@@ -97,14 +98,34 @@ export async function getProductById(product_id) {
   }
 }
 
+// export const getUsers = async function () {
+//   try {
+//     const [rows] = await db.query(
+//       `SELECT user_id, name, email, password, role,created_at
+//          FROM users
+//          ORDER BY name`
+//     );
+//     return rows;
+//   } catch (error) {
+//     console.error(error);
+//     throw new Error("Users could not be loaded");
+//   }
+// };
+
+// SUPABASE
 export const getUsers = async function () {
   try {
-    const [rows] = await db.query(
-      `SELECT user_id, name, email, password, role,created_at
-         FROM users
-         ORDER BY name`
-    );
-    return rows;
+    const { data, error } = await supabase
+      .from("users")
+      .select("user_id, name, email, password, role, created_at")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error(error);
+      throw new Error("Users could not be loaded");
+    }
+
+    return data; // data = array of users
   } catch (error) {
     console.error(error);
     throw new Error("Users could not be loaded");
