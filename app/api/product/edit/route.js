@@ -1,12 +1,14 @@
 // app/product/edit/route.js
 import { NextResponse } from "next/server";
-import db from "@/app/lib/db";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import sharp from "sharp";
 
 export async function POST(request) {
-  const formData = await request.formData();
+  const supabase = createRouteHandlerClient({ cookies });
 
-  const image = formData.get("image"); // Ambil image di awal
+  const formData = await request.formData();
+  const image = formData.get("image");
 
   const product = {
     product_id: parseInt(formData.get("product_id")),
@@ -50,7 +52,7 @@ export async function POST(request) {
       .toFormat("webp")
       .toBuffer();
 
-    filename = image.name.replace(/\.[^/.]+$/, "") + ".webp";
+    filename = `${Date.now()}-${image.name.replace(/\.[^/.]+$/, "")}.webp`;
     mime = "image/webp";
     size = buffer.length;
   }
@@ -67,90 +69,110 @@ export async function POST(request) {
 
     if (isNaN(product.product_id) || product.product_id === 0) {
       // Produk baru → INSERT
-      const [insertResult] = await db.query(
-        `
-        INSERT INTO products (name, sku, price, stock, description, created_date, updated_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        `,
-        [
-          product.name,
-          product.sku,
-          product.price,
-          product.stock,
-          product.description,
-          currentDate,
-          currentDate,
-        ]
-      );
+      const { data: insertedProduct, error: insertError } = await supabase
+        .from("products")
+        .insert([
+          {
+            name: product.name,
+            sku: product.sku,
+            price: product.price,
+            stock: product.stock,
+            description: product.description,
+            created_date: currentDate,
+            updated_date: currentDate,
+          },
+        ])
+        .select("product_id")
+        .single();
 
-      const newProductId = insertResult.insertId;
+      if (insertError) throw insertError;
+      const newProductId = insertedProduct.product_id;
 
-      // Insert gambar jika ada
+      // Upload gambar ke Supabase Storage & simpan metadata
       if (imageProvided) {
-        await db.query(
-          `INSERT INTO product_image (product_id, image, file_name, mime_type, bytes_size) VALUES (?, ?, ?, ?, ?)`,
-          [newProductId, buffer, filename, mime, size]
-        );
+        const { error: storageError } = await supabase.storage
+          .from("product-images")
+          .upload(filename, buffer, { contentType: mime });
+
+        if (storageError) throw storageError;
+
+        await supabase.from("product_image").insert([
+          {
+            product_id: newProductId,
+            image_url: filename,
+            file_name: filename,
+            mime_type: mime,
+            bytes_size: size,
+          },
+        ]);
       }
 
-      // Insert log ke imported_stock_history
-      await db.query(
-        `
-        INSERT INTO imported_stock_history (product_id, imported_date, total_imported)
-        VALUES (?, ?, ?)
-        `,
-        [newProductId, currentDate, product.stock]
-      );
+      // Log ke imported_stock_history
+      await supabase.from("imported_stock_history").insert([
+        {
+          product_id: newProductId,
+          imported_date: currentDate,
+          total_imported: product.stock,
+        },
+      ]);
     } else {
       // Produk sudah ada → update data dan tambahkan stok
-      const [existing] = await db.query(
-        `SELECT stock FROM products WHERE product_id = ?`,
-        [product.product_id]
-      );
+      const { data: existing, error: selectError } = await supabase
+        .from("products")
+        .select("stock")
+        .eq("product_id", product.product_id)
+        .single();
 
-      if (existing.length === 0) {
+      if (selectError || !existing) {
         return new Response("Produk tidak ditemukan", { status: 404 });
       }
 
-      const newStock = existing[0].stock + product.stock;
+      const newStock = existing.stock + product.stock;
 
-      await db.query(
-        `
-        UPDATE products
-        SET name = ?, sku = ?, price = ?, stock = ?, description = ?, updated_date = ?
-        WHERE product_id = ?
-        `,
-        [
-          product.name,
-          product.sku,
-          product.price,
-          newStock,
-          product.description,
-          currentDate,
-          product.product_id,
-        ]
-      );
+      await supabase
+        .from("products")
+        .update({
+          name: product.name,
+          sku: product.sku,
+          price: product.price,
+          stock: newStock,
+          description: product.description,
+          updated_date: currentDate,
+        })
+        .eq("product_id", product.product_id);
 
       // Update gambar jika ada
       if (imageProvided) {
-        await db.query(`DELETE FROM product_image WHERE product_id = ?`, [
-          product.product_id,
-        ]);
+        await supabase
+          .from("product_image")
+          .delete()
+          .eq("product_id", product.product_id);
 
-        await db.query(
-          `INSERT INTO product_image (product_id, image, file_name, mime_type, bytes_size) VALUES (?, ?, ?, ?, ?)`,
-          [product.product_id, buffer, filename, mime, size]
-        );
+        const { error: storageError } = await supabase.storage
+          .from("product-images")
+          .upload(filename, buffer, { contentType: mime });
+
+        if (storageError) throw storageError;
+
+        await supabase.from("product_image").insert([
+          {
+            product_id: product.product_id,
+            image_url: filename,
+            file_name: filename,
+            mime_type: mime,
+            bytes_size: size,
+          },
+        ]);
       }
 
       // Insert log ke imported_stock_history
-      await db.query(
-        `
-        INSERT INTO imported_stock_history (product_id, imported_date, total_imported)
-        VALUES (?, ?, ?)
-        `,
-        [product.product_id, currentDate, product.stock]
-      );
+      await supabase.from("imported_stock_history").insert([
+        {
+          product_id: product.product_id,
+          imported_date: currentDate,
+          total_imported: product.stock,
+        },
+      ]);
     }
 
     return NextResponse.json({
