@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@supabase/supabase-js": "^2.54.0",
     "bcrypt": "^6.0.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.11.0",
