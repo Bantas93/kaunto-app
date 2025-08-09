@@ -6,13 +6,23 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
+    const {
+      user_id,
+      transaction_number,
+      total_amount,
+      payment_method,
+      items,
+      tax,
+    } = body;
+
+    // Validasi basic
     if (
-      !body.user_id ||
-      !body.transaction_number ||
-      !body.total_amount ||
-      !body.payment_method ||
-      !Array.isArray(body.items) ||
-      !body.user_id
+      !user_id ||
+      !transaction_number ||
+      typeof total_amount !== "number" ||
+      !payment_method ||
+      !Array.isArray(items) ||
+      items.length === 0
     ) {
       return NextResponse.json(
         { error: "Invalid transaction payload." },
@@ -20,11 +30,22 @@ export async function POST(req) {
       );
     }
 
-    const result = await saveTransaction(body);
+    const result = await saveTransaction({
+      user_id,
+      transaction_number,
+      total_amount,
+      payment_method,
+      tax: tax || 0,
+      items,
+    });
 
     if (!result.success) {
       return NextResponse.json(
-        { error: "Failed to save transaction.", detail: result.error },
+        {
+          error: "Failed to save transaction.",
+          detail:
+            process.env.NODE_ENV === "development" ? result.error : undefined,
+        },
         { status: 500 }
       );
     }
@@ -32,7 +53,7 @@ export async function POST(req) {
     return NextResponse.json({
       success: true,
       transactionId: result.transactionId,
-      createdDate: result.createdDate,
+      createdDate: result.createdDate || new Date(),
     });
   } catch (error) {
     console.error("POST /api/transaction error:", error);
