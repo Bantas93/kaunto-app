@@ -6,6 +6,42 @@ import { supabase } from "./supabase";
 /* =========================
    PRODUCTS
 ========================= */
+// export const getProducts = async function () {
+//   try {
+//     const { data, error } = await supabase
+//       .from("products")
+//       .select(
+//         `
+//         *,
+//         product_image(image),
+//         product_discount(discount_amount, original_price)
+//       `
+//       )
+//       .order("name", { ascending: true });
+
+//     if (error) throw error;
+
+//     return data.map((row) => {
+//       let image = null;
+//       if (row.product_image?.length && row.product_image[0].image) {
+//         const base64 = Buffer.from(row.product_image[0].image).toString(
+//           "base64"
+//         );
+//         image = `data:image/jpeg;base64,${base64}`;
+//       }
+//       return {
+//         ...row,
+//         image,
+//         discount_amount: row.product_discount?.[0]?.discount_amount || null,
+//         original_price: row.product_discount?.[0]?.original_price || null,
+//       };
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     throw new Error("Products could not be loaded");
+//   }
+// };
+
 export const getProducts = async function () {
   try {
     const { data, error } = await supabase
@@ -23,12 +59,22 @@ export const getProducts = async function () {
 
     return data.map((row) => {
       let image = null;
+
       if (row.product_image?.length && row.product_image[0].image) {
-        const base64 = Buffer.from(row.product_image[0].image).toString(
-          "base64"
-        );
-        image = `data:image/jpeg;base64,${base64}`;
+        try {
+          const hex = row.product_image[0].image;
+
+          // Pastikan string diawali \x
+          if (typeof hex === "string" && hex.startsWith("\\x")) {
+            const binary = Buffer.from(hex.slice(2), "hex"); // buang \x lalu decode hex
+            const base64 = binary.toString("base64");
+            image = `data:image/jpeg;base64,${base64}`;
+          }
+        } catch (e) {
+          console.error("Gagal decode image bytea:", e.message);
+        }
       }
+
       return {
         ...row,
         image,
