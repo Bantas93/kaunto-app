@@ -1,24 +1,24 @@
 // app/api/admin/tambah/route.js
-import db from "@/app/lib/db";
+import { NextResponse } from "next/server";
+import { supabase } from "@/app/lib/supabase";
 import bcrypt from "bcrypt";
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, role } = await req.json();
 
     // Validasi form kosong
     if (!name || !email) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Form tidak bisa kosong" }),
+      return NextResponse.json(
+        { success: false, message: "Form tidak bisa kosong" },
         { status: 400 }
       );
     }
 
     // Validasi spasi pada name
     if (name.includes(" ")) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Spasi tidak dianjurkan" }),
+      return NextResponse.json(
+        { success: false, message: "Spasi tidak dianjurkan" },
         { status: 400 }
       );
     }
@@ -26,40 +26,39 @@ export async function POST(req) {
     // Validasi format email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Format email tidak valid.",
-        }),
+      return NextResponse.json(
+        { success: false, message: "Format email tidak valid." },
         { status: 400 }
       );
     }
 
     // Cek apakah kombinasi name dan email sudah ada
-    const [existing] = await db.execute(
-      "SELECT * FROM users WHERE name = ? AND email = ?",
-      [name, email]
-    );
+    const { data: existingUser, error: existingError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("name", name)
+      .eq("email", email);
 
-    if (existing.length > 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Akun user sudah pernah daftar",
-        }),
+    if (existingError) throw existingError;
+
+    if (existingUser.length > 0) {
+      return NextResponse.json(
+        { success: false, message: "Akun user sudah pernah daftar" },
         { status: 400 }
       );
     }
 
     // Cek jika hanya email saja yang sudah terpakai
-    const [emailExists] = await db.execute(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
+    const { data: emailExists, error: emailError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email);
+
+    if (emailError) throw emailError;
 
     if (emailExists.length > 0) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Email sudah digunakan." }),
+      return NextResponse.json(
+        { success: false, message: "Email sudah digunakan." },
         { status: 400 }
       );
     }
@@ -68,19 +67,26 @@ export async function POST(req) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Simpan user baru
-    await db.execute(
-      "INSERT INTO users (name, email, password, role, created_at) VALUES (?, ?, ?, ?, NOW())",
-      [name, email, hashedPassword, role]
-    );
+    const { error: insertError } = await supabase.from("users").insert([
+      {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+        created_at: new Date(),
+      },
+    ]);
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Penambahan berhasil!" }),
+    if (insertError) throw insertError;
+
+    return NextResponse.json(
+      { success: true, message: "Penambahan berhasil!" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Tambah error:", error);
-    return new Response(
-      JSON.stringify({ success: false, message: "Terjadi kesalahan server." }),
+    console.error("Tambah error:", error.message);
+    return NextResponse.json(
+      { success: false, message: "Terjadi kesalahan server." },
       { status: 500 }
     );
   }

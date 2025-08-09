@@ -1,11 +1,9 @@
 // api/product/delete/route.js
 
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { supabase } from "@/app/lib/supabase";
 
 export async function POST(req) {
-  const supabase = createRouteHandlerClient({ cookies });
-
   try {
     const { product_id } = await req.json();
 
@@ -27,23 +25,19 @@ export async function POST(req) {
       .eq("product_id", product_id);
 
     if (error) {
-      return new Response(
-        JSON.stringify({ success: false, message: error.message }),
+      return NextResponse.json(
+        { success: false, message: error.message },
         { status: 400 }
       );
     }
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Hapus berhasil!" }),
+    return NextResponse.json(
+      { success: true, message: "Hapus berhasil!" },
       { status: 200 }
     );
   } catch (err) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: "Gagal menghapus produk",
-        error: err.message,
-      }),
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus produk", error: err.message },
       { status: 500 }
     );
   }

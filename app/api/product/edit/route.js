@@ -1,12 +1,9 @@
 // app/product/edit/route.js
 import { NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { supabase } from "@/app/lib/supabase";
 import sharp from "sharp";
 
 export async function POST(request) {
-  const supabase = createRouteHandlerClient({ cookies });
-
   const formData = await request.formData();
   const image = formData.get("image");
 
