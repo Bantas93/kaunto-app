@@ -1,7 +1,6 @@
 // app/api/product/route.js
 import { NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabase";
-import sharp from "sharp";
 
 export async function POST(req) {
   try {
@@ -12,7 +11,7 @@ export async function POST(req) {
     const price = parseInt(formData.get("price"), 10);
     const stock = parseInt(formData.get("stock"), 10);
     const description = formData.get("description")?.trim();
-    const image = formData.get("image");
+    const image = formData.get("image"); // file
     const allowWithoutImage = formData.get("allowWithoutImage") === "true";
 
     const start_date = formData.get("start_date");
@@ -26,6 +25,7 @@ export async function POST(req) {
       !isNaN(discount_amount) &&
       !isNaN(original_price);
 
+    // Validasi wajib
     if (!name || !sku || isNaN(price) || isNaN(stock)) {
       return NextResponse.json({
         success: false,
@@ -53,40 +53,26 @@ export async function POST(req) {
       .eq("name", name);
     if (errName) throw errName;
 
-    // Proses image
-    let buffer = null,
-      filename = null,
-      mime = null,
-      size = null;
-    const imageProvided = image && typeof image.arrayBuffer === "function";
+    // Upload ke Supabase Storage (jika ada gambar)
+    let publicImageUrl = null;
+    let fileName = null;
 
-    if (imageProvided) {
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-      const maxSize = 5 * 1024 * 1024;
-
-      if (!allowedTypes.includes(image.type)) {
-        return NextResponse.json({
-          success: false,
-          message: "Format gambar tidak didukung.",
+    if (image && typeof image.name === "string") {
+      fileName = `${Date.now()}-${image.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("images")
+        .upload(fileName, image, {
+          cacheControl: "3600",
+          upsert: false,
         });
-      }
 
-      if (image.size > maxSize) {
-        return NextResponse.json({
-          success: false,
-          message: "Ukuran gambar terlalu besar. Maksimal 5MB.",
-        });
-      }
+      if (uploadError) throw uploadError;
 
-      const arrayBuffer = await image.arrayBuffer();
-      buffer = await sharp(Buffer.from(arrayBuffer))
-        .resize({ width: 800, withoutEnlargement: true })
-        .toFormat("webp")
-        .toBuffer();
+      const { data: publicUrlData } = supabase.storage
+        .from("images")
+        .getPublicUrl(fileName);
 
-      filename = image.name.replace(/\.[^/.]+$/, "") + ".webp";
-      mime = "image/webp";
-      size = buffer.length;
+      publicImageUrl = publicUrlData?.publicUrl || null;
     } else if (!allowWithoutImage) {
       return NextResponse.json({
         success: false,
@@ -106,14 +92,16 @@ export async function POST(req) {
     ) {
       productId = existingBySKU[0].product_id;
 
+      const updateData = {
+        price,
+        stock: existingBySKU[0].stock + stock,
+        description,
+        updated_date: new Date(),
+      };
+
       const { error: errUpdate } = await supabase
         .from("products")
-        .update({
-          price,
-          stock: existingBySKU[0].stock + stock,
-          description,
-          updated_date: new Date(),
-        })
+        .update(updateData)
         .eq("product_id", productId);
       if (errUpdate) throw errUpdate;
 
@@ -125,19 +113,15 @@ export async function POST(req) {
         },
       ]);
 
-      if (imageProvided) {
-        await supabase
-          .from("product_image")
-          .delete()
-          .eq("product_id", productId);
-
+      // simpan gambar baru jika ada
+      if (publicImageUrl) {
         await supabase.from("product_image").insert([
           {
             product_id: productId,
-            image: buffer,
-            file_name: filename,
-            mime_type: mime,
-            bytes_size: size,
+            image_url: publicImageUrl,
+            file_name: fileName,
+            mime_type: image.type,
+            bytes_size: image.size,
           },
         ]);
       }
@@ -160,19 +144,19 @@ export async function POST(req) {
     }
     // Produk baru
     else {
+      const insertData = {
+        name,
+        sku,
+        price,
+        stock,
+        description,
+        created_date: new Date(),
+        updated_date: new Date(),
+      };
+
       const { data: inserted, error: errInsert } = await supabase
         .from("products")
-        .insert([
-          {
-            name,
-            sku,
-            price,
-            stock,
-            description,
-            created_date: new Date(),
-            updated_date: new Date(),
-          },
-        ])
+        .insert([insertData])
         .select();
       if (errInsert) throw errInsert;
 
@@ -186,20 +170,22 @@ export async function POST(req) {
           imported_date: new Date(),
         },
       ]);
-
-      if (imageProvided) {
+      console.log("publicImageurl NIH BOSS :", publicImageUrl);
+      // simpan gambar kalau ada
+      if (publicImageUrl) {
         await supabase.from("product_image").insert([
           {
             product_id: productId,
-            image: buffer,
-            file_name: filename,
-            mime_type: mime,
-            bytes_size: size,
+            image_url: publicImageUrl,
+            file_name: fileName,
+            mime_type: image.type,
+            bytes_size: image.size,
           },
         ]);
       }
     }
 
+    // Simpan diskon jika valid
     if (isDiscountValid) {
       await supabase.from("product_discount").insert([
         {
