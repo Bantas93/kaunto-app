@@ -3,9 +3,10 @@
 
 import { useMemo, useState } from "react";
 import { useTransaction } from "../context/TransactionContext";
+import LoadingSpinner from "./LoadingSpinner";
 
 export default function ProductList({ keyword }) {
-  const { productList, addToTransaction } = useTransaction();
+  const { productList, addToTransaction, isLoading } = useTransaction();
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -46,12 +47,19 @@ export default function ProductList({ keyword }) {
       )}
 
       {/* Product Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 ">
-        {paginatedProducts.length === 0 ? (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {isLoading ? (
+          // Kalau loading
+          <div className="col-span-1 md:col-span-3 lg:col-span-4 text-center py-20 text-gray-500 text-lg font-medium">
+            <LoadingSpinner params="Sedang ambil data ..." />
+          </div>
+        ) : paginatedProducts.length === 0 ? (
+          // Kalau tidak ada produk
           <div className="col-span-2 md:col-span-3 lg:col-span-4 text-center py-20 text-gray-500 text-lg font-medium">
             Tidak ada produk yang tersedia.
           </div>
         ) : (
+          // Kalau ada produk
           paginatedProducts.map((product) => (
             <button
               onClick={() => addToTransaction(product)}
@@ -74,7 +82,7 @@ export default function ProductList({ keyword }) {
               </div>
 
               <div className="p-2 text-left dark:bg-gray-900 dark:text-yellow-600">
-                <h6 className="font-semibold truncate text-xs ">
+                <h6 className="font-semibold truncate text-xs">
                   {product.name}
                 </h6>
                 <p className="text-sm text-gray-600 dark:text-white">
