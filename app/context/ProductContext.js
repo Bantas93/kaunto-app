@@ -48,7 +48,7 @@ export const ProductProvider = ({ children }) => {
   };
   // console.log("products = ", products);
   // console.log("items = ", items);
-  console.log("stats = ", stats);
+  // console.log("stats = ", stats);
   return (
     <ProductContext.Provider
       value={{ stats, products, isLoading, items, refreshProducts }}

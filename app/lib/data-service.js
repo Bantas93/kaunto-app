@@ -625,12 +625,49 @@ export async function saveTransaction(payload) {
 /* =========================
    DASHBOARD DATA
 ========================= */
+// export const getAllData = async () => {
+//   try {
+//     const tables = [
+//       supabase.from("products").select("*"),
+//       supabase.from("transactions").select("*"),
+//       supabase.from("transaction_detail").select("subtotal"),
+//       supabase.from("imported_stock_history").select("*"),
+//       supabase.from("product_discount").select("*"),
+//     ];
+
+//     const [products, transactions, transDetail, importedStock, discounts] =
+//       await Promise.all(tables);
+
+//     const turnoverTotal = transDetail.data.reduce(
+//       (sum, td) => sum + (td.subtotal || 0),
+//       0
+//     );
+
+//     return [
+//       {
+//         stock_available: products.data.length,
+//         transaction_total: transactions.data.length,
+//         turnover_transaction: turnoverTotal,
+//         turnover_transaction_today: 11111,
+//         turnover_transaction_before: 22222,
+//         transaction_today: 33333,
+//         transaction_before: 44444,
+//         imported_stock_total: importedStock.data.length,
+//         product_discount: discounts.data.length,
+//       },
+//     ];
+//   } catch (err) {
+//     console.error(err);
+//     throw new Error("Products could not be loaded");
+//   }
+// };
+
 export const getAllData = async () => {
   try {
     const tables = [
       supabase.from("products").select("*"),
-      supabase.from("transactions").select("*"),
-      supabase.from("transaction_detail").select("subtotal"),
+      supabase.from("transactions").select("*"), // pastikan ada kolom created_at
+      supabase.from("transaction_detail").select("subtotal, transaction_id"),
       supabase.from("imported_stock_history").select("*"),
       supabase.from("product_discount").select("*"),
     ];
@@ -638,6 +675,48 @@ export const getAllData = async () => {
     const [products, transactions, transDetail, importedStock, discounts] =
       await Promise.all(tables);
 
+    // Waktu untuk filter
+    const now = new Date();
+    const startToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const endToday = new Date(startToday);
+    endToday.setHours(23, 59, 59, 999);
+
+    const startYesterday = new Date(startToday);
+    startYesterday.setDate(startYesterday.getDate() - 1);
+    const endYesterday = new Date(startYesterday);
+    endYesterday.setHours(23, 59, 59, 999);
+
+    // Filter transaksi
+    const todayTransactions = transactions.data.filter((t) => {
+      const tDate = new Date(t.created_date);
+      return tDate >= startToday && tDate <= endToday;
+    });
+
+    const yesterdayTransactions = transactions.data.filter((t) => {
+      const tDate = new Date(t.created_date);
+      return tDate >= startYesterday && tDate <= endYesterday;
+    });
+
+    // Hitung omzet hari ini & kemarin
+    const turnoverToday = transDetail.data
+      .filter((td) =>
+        todayTransactions.some((t) => t.transaction_id === td.transaction_id)
+      )
+      .reduce((sum, td) => sum + (td.subtotal || 0), 0);
+
+    const turnoverYesterday = transDetail.data
+      .filter((td) =>
+        yesterdayTransactions.some(
+          (t) => t.transaction_id === td.transaction_id
+        )
+      )
+      .reduce((sum, td) => sum + (td.subtotal || 0), 0);
+
+    // Omzet total semua transaksi
     const turnoverTotal = transDetail.data.reduce(
       (sum, td) => sum + (td.subtotal || 0),
       0
@@ -648,10 +727,10 @@ export const getAllData = async () => {
         stock_available: products.data.length,
         transaction_total: transactions.data.length,
         turnover_transaction: turnoverTotal,
-        turnover_transaction_today: 11111,
-        turnover_transaction_before: 22222,
-        transaction_today: 33333,
-        transaction_before: 44444,
+        turnover_transaction_today: turnoverToday,
+        turnover_transaction_before: turnoverYesterday,
+        transaction_today: todayTransactions.length,
+        transaction_before: yesterdayTransactions.length,
         imported_stock_total: importedStock.data.length,
         product_discount: discounts.data.length,
       },
