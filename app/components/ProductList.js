@@ -47,7 +47,7 @@ export default function ProductList({ keyword }) {
       )}
 
       {/* Product Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-4 md:gap-2">
         {isLoading ? (
           // Kalau loading
           <div className="col-span-1 md:col-span-3 lg:col-span-4 text-center py-20 text-gray-500 text-lg font-medium">

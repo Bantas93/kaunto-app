@@ -95,7 +95,7 @@ export default function Page() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute px-2 border-l border-gray-400 right-0 top-1/2 transform -translate-y-1/2 text-gray-500"
+                  className="absolute px-2 border-l border-gray-400 right-0 top-1/2 transform -translate-y-1/2 text-gray-500 hover:cursor-pointer"
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
@@ -113,7 +113,7 @@ export default function Page() {
               Belum punya akun?{" "}
               <button
                 onClick={() => router.push("/signup")}
-                className="text-blue-500 hover:underline dark:text-yellow-600"
+                className="text-blue-500 hover:cursor-pointer dark:text-yellow-600"
               >
                 Daftar sekarang
               </button>
