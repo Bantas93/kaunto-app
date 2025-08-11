@@ -13,8 +13,13 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("kasir");
 
+  const [isSubmit, setIsSbumit] = useState(false);
   const handleSignup = async (e) => {
     e.preventDefault();
+
+    if (isSubmit) return;
+
+    setIsSbumit(true);
 
     try {
       const res = await fetch("/api/signup", {
@@ -47,6 +52,8 @@ export default function SignupPage() {
         title: "Terjadi kesalahan",
         text: "Silakan coba lagi.",
       });
+    } finally {
+      setIsSbumit(false);
     }
   };
 
@@ -102,9 +109,14 @@ export default function SignupPage() {
             </select>
             <button
               type="submit"
-              className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:text-black"
+              disabled={isSubmit}
+              className={`w-full py-2 rounded-md transition ${
+                isSubmit
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              }`}
             >
-              Daftar
+              {isSubmit ? "Mendaftar..." : "Daftar"}
             </button>
           </form>
 
@@ -112,7 +124,7 @@ export default function SignupPage() {
             Sudah punya akun?{" "}
             <button
               onClick={() => router.push("/")}
-              className="text-blue-500 hover:underline dark:text-yellow-600"
+              className="text-blue-500 hover:cursor-pointer dark:text-yellow-600"
             >
               Login di sini
             </button>

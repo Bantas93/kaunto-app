@@ -59,6 +59,7 @@ const Page = () => {
       setPreview(URL.createObjectURL(file));
     }
   };
+
   const handleAddProduct = async (e) => {
     e.preventDefault();
 

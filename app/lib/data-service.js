@@ -6,6 +6,7 @@ import { supabase } from "./supabase";
 /* =========================
    PRODUCTS
 ========================= */
+
 // export const getProducts = async function () {
 //   try {
 //     const { data, error } = await supabase
@@ -23,12 +24,22 @@ import { supabase } from "./supabase";
 
 //     return data.map((row) => {
 //       let image = null;
+
 //       if (row.product_image?.length && row.product_image[0].image) {
-//         const base64 = Buffer.from(row.product_image[0].image).toString(
-//           "base64"
-//         );
-//         image = `data:image/jpeg;base64,${base64}`;
+//         try {
+//           const hex = row.product_image[0].image;
+
+//           // Pastikan string diawali \x
+//           if (typeof hex === "string" && hex.startsWith("\\x")) {
+//             const binary = Buffer.from(hex.slice(2), "hex"); // buang \x lalu decode hex
+//             const base64 = binary.toString("base64");
+//             image = `data:image/jpeg;base64,${base64}`;
+//           }
+//         } catch (e) {
+//           console.error("Gagal decode image bytea:", e.message);
+//         }
 //       }
+
 //       return {
 //         ...row,
 //         image,
@@ -42,46 +53,107 @@ import { supabase } from "./supabase";
 //   }
 // };
 
+// export const getProducts = async function () {
+//   try {
+//     // Ambil semua produk
+//     const { data: products, error: prodError } = await supabase
+//       .from("products")
+//       .select("*")
+//       .order("name", { ascending: true });
+
+//     if (prodError) throw prodError;
+
+//     // Ambil semua gambar
+//     const { data: images, error: imgError } = await supabase
+//       .from("product_image")
+//       .select("product_id, image_url");
+
+//     if (imgError) throw imgError;
+
+//     // Ambil semua diskon
+//     const { data: discounts, error: discError } = await supabase
+//       .from("product_discount")
+//       .select("product_id, discount_amount, original_price");
+
+//     if (discError) throw discError;
+
+//     // Gabungkan hasil seperti LEFT JOIN MySQL
+//     const result = products.map((p) => {
+//       // Cari gambar produk
+//       let image = null;
+//       const imgRow = images.find((i) => i.product_id === p.product_id);
+//       if (imgRow?.image) {
+//         try {
+//           const hex = imgRow.image;
+//           if (typeof hex === "string" && hex.startsWith("\\x")) {
+//             const binary = Buffer.from(hex.slice(2), "hex");
+//             const base64 = binary.toString("base64");
+//             image = `data:image/jpeg;base64,${base64}`;
+//           }
+//         } catch (e) {
+//           console.error("Gagal decode image bytea:", e.message);
+//         }
+//       }
+
+//       // Cari diskon produk
+//       const discRow =
+//         discounts.find((d) => d.product_id === p.product_id) || {};
+
+//       return {
+//         ...p,
+//         image,
+//         discount_amount: discRow.discount_amount ?? null,
+//         original_price: discRow.original_price ?? null,
+//       };
+//     });
+
+//     return result;
+//   } catch (error) {
+//     console.error(error);
+//     throw new Error("Products could not be loaded");
+//   }
+// };
+
 export const getProducts = async function () {
   try {
-    const { data, error } = await supabase
+    // Ambil semua produk
+    const { data: products, error: prodError } = await supabase
       .from("products")
-      .select(
-        `
-        *,
-        product_image(image),
-        product_discount(discount_amount, original_price)
-      `
-      )
+      .select("*")
       .order("name", { ascending: true });
+    if (prodError) throw prodError;
 
-    if (error) throw error;
+    // Ambil semua gambar
+    const { data: images, error: imgError } = await supabase
+      .from("product_image")
+      .select("product_id, image_url");
+    if (imgError) throw imgError;
 
-    return data.map((row) => {
-      let image = null;
+    // Ambil semua diskon
+    const { data: discounts, error: discError } = await supabase
+      .from("product_discount")
+      .select("product_id, discount_amount, original_price");
+    if (discError) throw discError;
 
-      if (row.product_image?.length && row.product_image[0].image) {
-        try {
-          const hex = row.product_image[0].image;
+    // Gabungkan hasil seperti LEFT JOIN MySQL
+    const result = products.map((p) => {
+      // cari gambar sesuai product_id
+      const imgRow = images.find((i) => i.product_id === p.product_id);
+      const image = imgRow?.image_url || null;
 
-          // Pastikan string diawali \x
-          if (typeof hex === "string" && hex.startsWith("\\x")) {
-            const binary = Buffer.from(hex.slice(2), "hex"); // buang \x lalu decode hex
-            const base64 = binary.toString("base64");
-            image = `data:image/jpeg;base64,${base64}`;
-          }
-        } catch (e) {
-          console.error("Gagal decode image bytea:", e.message);
-        }
-      }
+      // cari diskon sesuai product_id
+      const discRow =
+        discounts.find((d) => d.product_id === p.product_id) || {};
 
       return {
-        ...row,
-        image,
-        discount_amount: row.product_discount?.[0]?.discount_amount || null,
-        original_price: row.product_discount?.[0]?.original_price || null,
+        ...p,
+        image, // langsung URL dari Supabase Storage
+        discount_amount: discRow.discount_amount ?? null,
+        original_price: discRow.original_price ?? null,
       };
     });
+
+    return result;
   } catch (error) {
     console.error(error);
     throw new Error("Products could not be loaded");
@@ -89,43 +161,40 @@ export const getProducts = async function () {
 };
 
 // Ambil semua produk + diskon (LEFT JOIN)
+
 export const getProductsOption = async function () {
   try {
+    // Ambil semua produk
     const { data: products, error: prodError } = await supabase
       .from("products")
-      .select(
-        `
-        product_id,
-        name,
-        sku,
-        price,
-        stock,
-        description,
-        product_discount (
-          discount_amount,
-          original_price,
-          start_date,
-          end_date
-        )
-      `
-      )
+      .select("product_id, name, sku, price, stock, description")
       .order("name", { ascending: true });
 
     if (prodError) throw prodError;
 
-    // Flatten relasi product_discount supaya mirip hasil query MySQL
-    return products.map((p) => ({
-      product_id: p.product_id,
-      name: p.name,
-      sku: p.sku,
-      price: p.price,
-      discount_amount: p.product_discount?.[0]?.discount_amount || null,
-      original_price: p.product_discount?.[0]?.original_price || null,
-      start_date: p.product_discount?.[0]?.start_date || null,
-      end_date: p.product_discount?.[0]?.end_date || null,
-      stock: p.stock,
-      description: p.description,
-    }));
+    // Ambil semua diskon
+    const { data: discounts, error: discError } = await supabase
+      .from("product_discount")
+      .select(
+        "product_id, discount_amount, original_price, start_date, end_date"
+      );
+
+    if (discError) throw discError;
+
+    // Gabungkan seperti hasil LEFT JOIN MySQL
+    const result = products.map((p) => {
+      const foundDiscount =
+        discounts.find((d) => d.product_id === p.product_id) || {};
+      return {
+        ...p,
+        discount_amount: foundDiscount.discount_amount ?? null,
+        original_price: foundDiscount.original_price ?? null,
+        start_date: foundDiscount.start_date ?? null,
+        end_date: foundDiscount.end_date ?? null,
+      };
+    });
+
+    return result;
   } catch (error) {
     console.error("Gagal mengambil produk dengan diskon:", error.message);
     throw new Error("Produk diskon tidak dapat dimuat");
@@ -556,12 +625,49 @@ export async function saveTransaction(payload) {
 /* =========================
    DASHBOARD DATA
 ========================= */
+// export const getAllData = async () => {
+//   try {
+//     const tables = [
+//       supabase.from("products").select("*"),
+//       supabase.from("transactions").select("*"),
+//       supabase.from("transaction_detail").select("subtotal"),
+//       supabase.from("imported_stock_history").select("*"),
+//       supabase.from("product_discount").select("*"),
+//     ];
+
+//     const [products, transactions, transDetail, importedStock, discounts] =
+//       await Promise.all(tables);
+
+//     const turnoverTotal = transDetail.data.reduce(
+//       (sum, td) => sum + (td.subtotal || 0),
+//       0
+//     );
+
+//     return [
+//       {
+//         stock_available: products.data.length,
+//         transaction_total: transactions.data.length,
+//         turnover_transaction: turnoverTotal,
+//         turnover_transaction_today: 11111,
+//         turnover_transaction_before: 22222,
+//         transaction_today: 33333,
+//         transaction_before: 44444,
+//         imported_stock_total: importedStock.data.length,
+//         product_discount: discounts.data.length,
+//       },
+//     ];
+//   } catch (err) {
+//     console.error(err);
+//     throw new Error("Products could not be loaded");
+//   }
+// };
+
 export const getAllData = async () => {
   try {
     const tables = [
       supabase.from("products").select("*"),
-      supabase.from("transactions").select("*"),
-      supabase.from("transaction_detail").select("subtotal"),
+      supabase.from("transactions").select("*"), // pastikan ada kolom created_at
+      supabase.from("transaction_detail").select("subtotal, transaction_id"),
       supabase.from("imported_stock_history").select("*"),
       supabase.from("product_discount").select("*"),
     ];
@@ -569,6 +675,48 @@ export const getAllData = async () => {
     const [products, transactions, transDetail, importedStock, discounts] =
       await Promise.all(tables);
 
+    // Waktu untuk filter
+    const now = new Date();
+    const startToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const endToday = new Date(startToday);
+    endToday.setHours(23, 59, 59, 999);
+
+    const startYesterday = new Date(startToday);
+    startYesterday.setDate(startYesterday.getDate() - 1);
+    const endYesterday = new Date(startYesterday);
+    endYesterday.setHours(23, 59, 59, 999);
+
+    // Filter transaksi
+    const todayTransactions = transactions.data.filter((t) => {
+      const tDate = new Date(t.created_date);
+      return tDate >= startToday && tDate <= endToday;
+    });
+
+    const yesterdayTransactions = transactions.data.filter((t) => {
+      const tDate = new Date(t.created_date);
+      return tDate >= startYesterday && tDate <= endYesterday;
+    });
+
+    // Hitung omzet hari ini & kemarin
+    const turnoverToday = transDetail.data
+      .filter((td) =>
+        todayTransactions.some((t) => t.transaction_id === td.transaction_id)
+      )
+      .reduce((sum, td) => sum + (td.subtotal || 0), 0);
+
+    const turnoverYesterday = transDetail.data
+      .filter((td) =>
+        yesterdayTransactions.some(
+          (t) => t.transaction_id === td.transaction_id
+        )
+      )
+      .reduce((sum, td) => sum + (td.subtotal || 0), 0);
+
+    // Omzet total semua transaksi
     const turnoverTotal = transDetail.data.reduce(
       (sum, td) => sum + (td.subtotal || 0),
       0
@@ -579,6 +727,10 @@ export const getAllData = async () => {
         stock_available: products.data.length,
         transaction_total: transactions.data.length,
         turnover_transaction: turnoverTotal,
+        turnover_transaction_today: turnoverToday,
+        turnover_transaction_before: turnoverYesterday,
+        transaction_today: todayTransactions.length,
+        transaction_before: yesterdayTransactions.length,
         imported_stock_total: importedStock.data.length,
         product_discount: discounts.data.length,
       },

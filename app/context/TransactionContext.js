@@ -16,10 +16,13 @@ const initialState = {
   transactionList: [],
   finalTransaction: null,
   productList: [],
+  isLoading: false,
 };
 
 function transactionReducer(state, action) {
   switch (action.type) {
+    case "SET_LOADING":
+      return { ...state, isLoading: action.payload };
     case "SET_PRODUCTS":
       return { ...state, productList: action.payload };
 
@@ -85,9 +88,12 @@ export function TransactionProvider({ children }) {
   const [state, dispatch] = useReducer(transactionReducer, initialState);
 
   useEffect(() => {
-    getProducts().then((data) =>
-      dispatch({ type: "SET_PRODUCTS", payload: data })
-    );
+    dispatch({ type: "SET_LOADING", payload: true });
+    getProducts()
+      .then((data) => dispatch({ type: "SET_PRODUCTS", payload: data }))
+      .finally(() => {
+        dispatch({ type: "SET_LOADING", payload: false });
+      });
   }, []);
 
   const value = useMemo(

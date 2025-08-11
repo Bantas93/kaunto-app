@@ -1,3 +1,4 @@
+// api/product/list/route.js
 import { NextResponse } from "next/server";
 import { getProducts } from "@/app/lib/data-service";
 

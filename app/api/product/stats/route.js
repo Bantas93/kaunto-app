@@ -1,3 +1,4 @@
+// api/product/stats/route.js
 import { NextResponse } from "next/server";
 import { getAllData } from "@/app/lib/data-service";
 

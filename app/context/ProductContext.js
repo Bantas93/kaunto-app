@@ -1,3 +1,5 @@
+// context/ProductContext.js
+
 "use client";
 import { createContext, useState, useEffect, useContext } from "react";
 
@@ -44,7 +46,9 @@ export const ProductProvider = ({ children }) => {
     setItems(itemsData);
     setIsLoading(false);
   };
-
+  // console.log("products = ", products);
+  // console.log("items = ", items);
+  // console.log("stats = ", stats);
   return (
     <ProductContext.Provider
       value={{ stats, products, isLoading, items, refreshProducts }}
