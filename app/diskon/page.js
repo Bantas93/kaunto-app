@@ -109,7 +109,10 @@ const Page = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-4 text-gray-500">
+                  <td
+                    colSpan="7"
+                    className="border text-center py-4 text-gray-500"
+                  >
                     {<LoadingSpinner params="Mengambil data diskon..." />}
                   </td>
                 </tr>
