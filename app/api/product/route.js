@@ -143,8 +143,8 @@ export async function POST(req) {
             product_id: productId,
             image_url: publicImageUrl,
             file_name: fileName,
-            mime_type: image.type,
-            bytes_size: image.size,
+            mime_type: "image/webp",
+            bytes_size: buffer.length,
           },
         ]);
       }
@@ -201,8 +201,8 @@ export async function POST(req) {
             product_id: productId,
             image_url: publicImageUrl,
             file_name: fileName,
-            mime_type: image.type,
-            bytes_size: image.size,
+            mime_type: "image/webp",
+            bytes_size: buffer.length,
           },
         ]);
       }

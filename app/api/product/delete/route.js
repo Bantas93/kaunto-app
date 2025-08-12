@@ -7,12 +7,24 @@ export async function POST(req) {
   try {
     const { product_id } = await req.json();
 
-    // Hapus data terkait
+    // Ambil nama image
+    let { data: product_image } = await supabase
+      .from("product_image")
+      .select("file_name")
+      .eq("product_id", product_id)
+      .single();
+
+    // Hapus gambar di Bucket
+    await supabase.storage.from("images").remove(product_image.file_name);
+
+    // Hapus data product_image
     await supabase.from("product_image").delete().eq("product_id", product_id);
+    // Hapus data product_discount
     await supabase
       .from("product_discount")
       .delete()
       .eq("product_id", product_id);
+    // Hapus data imported_stock_history
     await supabase
       .from("imported_stock_history")
       .delete()
