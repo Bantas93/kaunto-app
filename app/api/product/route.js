@@ -1,45 +1,43 @@
 // app/api/product/route.js
 import { NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabase";
+import sharp from "sharp";
 
 export async function POST(req) {
+  const formData = await req.formData();
+
+  const name = formData.get("name")?.trim();
+  const sku = formData.get("sku")?.trim();
+  const price = parseInt(formData.get("price"), 10);
+  const stock = parseInt(formData.get("stock"), 10);
+  const description = formData.get("description")?.trim();
+  const image = formData.get("image");
+  const allowWithoutImage = formData.get("allowWithoutImage") === "true";
+
+  const start_date = formData.get("start_date");
+  const end_date = formData.get("end_date");
+  const discount_amount = parseInt(formData.get("discount_amount"), 10);
+  const original_price = parseInt(formData.get("original_price"), 10);
+
+  const isDiscountValid =
+    start_date && end_date && !isNaN(discount_amount) && !isNaN(original_price);
+
+  // Validasi wajib
+  if (!name || !sku || isNaN(price) || isNaN(stock)) {
+    return NextResponse.json({
+      success: false,
+      message: "Data tidak lengkap.",
+    });
+  }
+
+  if (price <= 0 || stock <= 0) {
+    return NextResponse.json({
+      success: false,
+      message: "Harga/Stok tidak boleh input minus(-).",
+    });
+  }
+
   try {
-    const formData = await req.formData();
-
-    const name = formData.get("name")?.trim();
-    const sku = formData.get("sku")?.trim();
-    const price = parseInt(formData.get("price"), 10);
-    const stock = parseInt(formData.get("stock"), 10);
-    const description = formData.get("description")?.trim();
-    const image = formData.get("image"); // file
-    const allowWithoutImage = formData.get("allowWithoutImage") === "true";
-
-    const start_date = formData.get("start_date");
-    const end_date = formData.get("end_date");
-    const discount_amount = parseInt(formData.get("discount_amount"), 10);
-    const original_price = parseInt(formData.get("original_price"), 10);
-
-    const isDiscountValid =
-      start_date &&
-      end_date &&
-      !isNaN(discount_amount) &&
-      !isNaN(original_price);
-
-    // Validasi wajib
-    if (!name || !sku || isNaN(price) || isNaN(stock)) {
-      return NextResponse.json({
-        success: false,
-        message: "Data tidak lengkap.",
-      });
-    }
-
-    if (price <= 0 || stock <= 0) {
-      return NextResponse.json({
-        success: false,
-        message: "Harga dan stok harus lebih dari 0.",
-      });
-    }
-
     // Cek produk existing
     const { data: existingBySKU, error: errSku } = await supabase
       .from("products")
@@ -58,12 +56,37 @@ export async function POST(req) {
     let fileName = null;
 
     if (image && typeof image.name === "string") {
-      fileName = `${Date.now()}-${image.name}`;
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+      const maxSize = 5 * 1024 * 1024;
+
+      if (!allowedTypes.includes(image.type)) {
+        return NextResponse.json({
+          success: false,
+          message: "Format gambar tidak didukung.",
+        });
+      }
+
+      if (image.size > maxSize) {
+        return NextResponse.json({
+          success: false,
+          message: "Ukuran gambar terlalu besar. Maksimal 5MB.",
+        });
+      }
+
+      const arrayBuffer = await image.arrayBuffer();
+      const buffer = await sharp(Buffer.from(arrayBuffer))
+        .resize({ width: 800, withoutEnlargement: true })
+        .toFormat("webp")
+        .toBuffer();
+
+      fileName = `${Date.now()}-${image.name.replace(/\.[^/.]+$/, "")}.webp`;
+
       const { error: uploadError } = await supabase.storage
         .from("images")
-        .upload(fileName, image, {
-          cacheControl: "3600",
+        .upload(fileName, buffer, {
+          cacheControl: "60", // 1 menit cache
           upsert: false,
+          contentType: "image/webp",
         });
 
       if (uploadError) throw uploadError;

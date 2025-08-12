@@ -18,6 +18,14 @@ export async function POST(request) {
 
   const currentDate = new Date();
 
+  // Validasi
+  if (product.price <= 0 || product.stock <= 0) {
+    return NextResponse.json({
+      success: false,
+      message: "Harga/Stok tidak boleh input minus(-).",
+    });
+  }
+
   let buffer = null,
     filename = null,
     mime = null,
@@ -50,6 +58,7 @@ export async function POST(request) {
       .toBuffer();
 
     filename = `${Date.now()}-${image.name.replace(/\.[^/.]+$/, "")}.webp`;
+
     mime = "image/webp";
     size = buffer.length;
   }
@@ -64,55 +73,7 @@ export async function POST(request) {
       return new Response("Data tidak valid", { status: 400 });
     }
 
-    if (isNaN(product.product_id) || product.product_id === 0) {
-      // Produk baru → INSERT
-      const { data: insertedProduct, error: insertError } = await supabase
-        .from("products")
-        .insert([
-          {
-            name: product.name,
-            sku: product.sku,
-            price: product.price,
-            stock: product.stock,
-            description: product.description,
-            created_date: currentDate,
-            updated_date: currentDate,
-          },
-        ])
-        .select("product_id")
-        .single();
-
-      if (insertError) throw insertError;
-      const newProductId = insertedProduct.product_id;
-
-      // Upload gambar ke Supabase Storage & simpan metadata
-      if (imageProvided) {
-        const { error: storageError } = await supabase.storage
-          .from("product-images")
-          .upload(filename, buffer, { contentType: mime });
-
-        if (storageError) throw storageError;
-
-        await supabase.from("product_image").insert([
-          {
-            product_id: newProductId,
-            image_url: filename,
-            file_name: filename,
-            mime_type: mime,
-            bytes_size: size,
-          },
-        ]);
-      }
-
-      // Log ke imported_stock_history
-      await supabase.from("imported_stock_history").insert([
-        {
-          product_id: newProductId,
-          imported_date: currentDate,
-          total_imported: product.stock,
-        },
-      ]);
-    } else {
+    if (product?.product_id) {
       // Produk sudah ada → update data dan tambahkan stok
       const { data: existing, error: selectError } = await supabase
         .from("products")
@@ -140,21 +101,39 @@ export async function POST(request) {
 
       // Update gambar jika ada
       if (imageProvided) {
+        // Ambil file lama
+        const { data: oldImage } = await supabase
+          .from("product_image")
+          .select("file_name")
+          .eq("product_id", product.product_id)
+          .single();
+
+        // Kalau ada file lama → hapus di storage
+        if (oldImage?.file_name) {
+          await supabase.storage.from("images").remove([oldImage.file_name]);
+        }
+
         await supabase
           .from("product_image")
           .delete()
           .eq("product_id", product.product_id);
 
         const { error: storageError } = await supabase.storage
-          .from("product-images")
+          .from("images")
           .upload(filename, buffer, { contentType: mime });
 
         if (storageError) throw storageError;
 
+        const { data: publicUrlData } = supabase.storage
+          .from("images")
+          .getPublicUrl(filename);
+
+        const publicImageUrl = publicUrlData?.publicUrl || null;
+
         await supabase.from("product_image").insert([
           {
             product_id: product.product_id,
-            image_url: filename,
+            image_url: publicImageUrl,
             file_name: filename,
             mime_type: mime,
             bytes_size: size,

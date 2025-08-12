@@ -170,35 +170,72 @@ const Page = () => {
         <div className="p-6 space-y-6">
           <form onSubmit={handleAddProduct}>
             <div className="grid grid-cols-6 gap-6">
-              <div className="col-span-6 sm:col-span-3">
-                <label
-                  htmlFor="sku"
-                  className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
-                >
-                  Sku
-                </label>
-                <input
-                  type="text"
-                  name="sku"
-                  value={formData.sku}
-                  onChange={handleChange}
-                  id="sku"
-                  className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-cyan-600 focus:border-cyan-600 block w-full p-2.5 dark:bg-gray-900 dark:text-white"
-                  placeholder="SKU-123xxx...."
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      sku: randomSku(),
-                    }))
-                  }
-                  className="border bg-gray-200 px-3 py-1 rounded text-sm w-fit dark:bg-yellow-600 dark:text-black dark:border-yellow-600 hover:cursor-pointer"
-                >
-                  Random SKU
-                </button>
-              </div>
+              {id ? (
+                <div className="col-span-6 sm:col-span-3">
+                  <label
+                    htmlFor="sku"
+                    className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
+                  >
+                    Sku
+                  </label>
+                  <input
+                    disabled
+                    type="text"
+                    name="sku"
+                    value={formData.sku}
+                    // onChange={handleChange}
+                    id="sku"
+                    className="shadow-sm bg-gray-200 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 dark:bg-gray-900 dark:text-white"
+                    placeholder="SKU-123xxx...."
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sku: randomSku(),
+                      }))
+                    }
+                    className="border bg-gray-200 px-3 py-1 rounded text-sm w-fit dark:bg-yellow-600 dark:text-black dark:border-yellow-600 hover:cursor-pointer"
+                    hidden
+                  >
+                    Random SKU
+                  </button>
+                </div>
+              ) : (
+                <div className="col-span-6 sm:col-span-3">
+                  <label
+                    htmlFor="sku"
+                    className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
+                  >
+                    Sku
+                  </label>
+                  <input
+                    type="text"
+                    name="sku"
+                    value={formData.sku}
+                    onChange={handleChange}
+                    id="sku"
+                    className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-cyan-600 focus:border-cyan-600 block w-full p-2.5 dark:bg-gray-900 dark:text-white"
+                    placeholder="SKU-123xxx...."
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sku: randomSku(),
+                      }))
+                    }
+                    className="border bg-gray-200 px-3 py-1 rounded text-sm w-fit dark:bg-yellow-600 dark:text-black dark:border-yellow-600 hover:cursor-pointer"
+                  >
+                    Random SKU
+                  </button>
+                </div>
+              )}
+
               <div className="col-span-6 sm:col-span-3">
                 <label
                   htmlFor="name"
