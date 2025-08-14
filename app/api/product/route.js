@@ -54,6 +54,7 @@ export async function POST(req) {
     // Upload ke Supabase Storage (jika ada gambar)
     let publicImageUrl = null;
     let fileName = null;
+    let buffer = null;
 
     if (image && typeof image.name === "string") {
       const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -74,7 +75,7 @@ export async function POST(req) {
       }
 
       const arrayBuffer = await image.arrayBuffer();
-      const buffer = await sharp(Buffer.from(arrayBuffer))
+      buffer = await sharp(Buffer.from(arrayBuffer))
         .resize({ width: 800, withoutEnlargement: true })
         .toFormat("webp")
         .toBuffer();
@@ -193,7 +194,7 @@ export async function POST(req) {
           imported_date: new Date(),
         },
       ]);
-      console.log("publicImageurl NIH BOSS :", publicImageUrl);
+
       // simpan gambar kalau ada
       if (publicImageUrl) {
         await supabase.from("product_image").insert([

@@ -81,6 +81,7 @@ export default function DashboardPage() {
       linkLabel: "Tabel Histori Transaksi",
     },
   ];
+
   if (!stats) {
     return (
       <div className="p-6">
@@ -97,12 +98,14 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen dark:bg-gray-900 dark:text-white">
+      {/* Header */}
       <div className="grid grid-cols-7">
         <div className="col-start-6 col-span-2 text-right">
           <DateTimeDisplay />
         </div>
       </div>
 
+      {/* Kartu Statistik */}
       {categories.map((group, groupIdx) => (
         <div key={groupIdx} className="mb-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4 dark:text-white">

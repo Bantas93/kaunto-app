@@ -108,7 +108,7 @@ export async function POST(request) {
           .eq("product_id", product.product_id)
           .single();
 
-        // Kalau ada file lama → hapus di storage
+        // Kalau ada file lama -> hapus di storage
         if (oldImage?.file_name) {
           await supabase.storage.from("images").remove([oldImage.file_name]);
         }
