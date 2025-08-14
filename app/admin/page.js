@@ -7,17 +7,22 @@ import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
 import { formatDateTime } from "../utils/formatDate";
 import BackButton from "../components/BackButton";
 import Swal from "sweetalert2";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const Page = () => {
   const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const data = await getAllUsers();
         setUsers(data);
       } catch (err) {
         console.log(err);
         throw new Error("Gagal mengambildata", err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
@@ -51,7 +56,13 @@ const Page = () => {
           </thead>
 
           <tbody>
-            {users.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan="5" className="text-center py-4 text-gray-500">
+                  <LoadingSpinner params="Mengambil data user..." />
+                </td>
+              </tr>
+            ) : users.length === 0 ? (
               <tr>
                 <td colSpan="5" className="text-center py-4 text-gray-500">
                   Tidak ada data users.

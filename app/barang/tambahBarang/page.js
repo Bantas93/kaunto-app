@@ -5,6 +5,7 @@ import BackButton from "@/app/components/BackButton";
 import randomSku from "@/app/components/RandomSku";
 import { useProducts } from "@/app/context/ProductContext";
 import { getProductById } from "@/app/lib/data-service";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
@@ -24,6 +25,7 @@ const Page = () => {
     image: null,
   });
 
+  const [stockNow, setStockNow] = useState(null);
   useEffect(() => {
     if (id) {
       const fetchData = async () => {
@@ -33,10 +35,11 @@ const Page = () => {
             name: data.name,
             sku: data.sku,
             price: data.price,
-            stock: data.stock,
+            stock: 0,
             description: data.description,
             image: null,
           });
+          setStockNow(data.stock);
         } catch (err) {
           console.log(err);
           throw new Error("Gagal ambil detail produk", err);
@@ -49,7 +52,11 @@ const Page = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "image") return;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "price" || name === "stock" ? parseInt(value || 0, 10) : value,
+    }));
   };
 
   const handleImageChange = (e) => {
@@ -64,7 +71,12 @@ const Page = () => {
     e.preventDefault();
 
     // Validasi input wajib
-    if (!formData.name || !formData.sku || !formData.price || !formData.stock) {
+    if (
+      !formData.name ||
+      !formData.sku ||
+      !formData.price == null ||
+      !formData.stock == null
+    ) {
       Swal.fire("Peringatan", "Harap lengkapi semua field wajib", "warning");
       return;
     }
@@ -170,35 +182,72 @@ const Page = () => {
         <div className="p-6 space-y-6">
           <form onSubmit={handleAddProduct}>
             <div className="grid grid-cols-6 gap-6">
-              <div className="col-span-6 sm:col-span-3">
-                <label
-                  htmlFor="sku"
-                  className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
-                >
-                  Sku
-                </label>
-                <input
-                  type="text"
-                  name="sku"
-                  value={formData.sku}
-                  onChange={handleChange}
-                  id="sku"
-                  className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-cyan-600 focus:border-cyan-600 block w-full p-2.5 dark:bg-gray-900 dark:text-white"
-                  placeholder="SKU-123xxx...."
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      sku: randomSku(),
-                    }))
-                  }
-                  className="border bg-gray-200 px-3 py-1 rounded text-sm w-fit dark:bg-yellow-600 dark:text-black dark:border-yellow-600 hover:cursor-pointer"
-                >
-                  Random SKU
-                </button>
-              </div>
+              {id ? (
+                <div className="col-span-6 sm:col-span-3">
+                  <label
+                    htmlFor="sku"
+                    className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
+                  >
+                    Sku
+                  </label>
+                  <input
+                    disabled
+                    type="text"
+                    name="sku"
+                    value={formData.sku}
+                    // onChange={handleChange}
+                    id="sku"
+                    className="shadow-sm bg-gray-200 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 dark:bg-gray-900 dark:text-white"
+                    placeholder="SKU-123xxx...."
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sku: randomSku(),
+                      }))
+                    }
+                    className="border bg-gray-200 px-3 py-1 rounded text-sm w-fit dark:bg-yellow-600 dark:text-black dark:border-yellow-600 hover:cursor-pointer"
+                    hidden
+                  >
+                    Random SKU
+                  </button>
+                </div>
+              ) : (
+                <div className="col-span-6 sm:col-span-3">
+                  <label
+                    htmlFor="sku"
+                    className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
+                  >
+                    Sku
+                  </label>
+                  <input
+                    type="text"
+                    name="sku"
+                    value={formData.sku}
+                    onChange={handleChange}
+                    id="sku"
+                    className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-cyan-600 focus:border-cyan-600 block w-full p-2.5 dark:bg-gray-900 dark:text-white"
+                    placeholder="SKU-123xxx...."
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sku: randomSku(),
+                      }))
+                    }
+                    className="border bg-gray-200 px-3 py-1 rounded text-sm w-fit dark:bg-yellow-600 dark:text-black dark:border-yellow-600 hover:cursor-pointer"
+                  >
+                    Random SKU
+                  </button>
+                </div>
+              )}
+
               <div className="col-span-6 sm:col-span-3">
                 <label
                   htmlFor="name"
@@ -216,6 +265,7 @@ const Page = () => {
                   placeholder="Contoh: Ayam penyet..."
                 />
               </div>
+
               <div className="col-span-6 sm:col-span-3">
                 <label
                   htmlFor="price"
@@ -233,23 +283,51 @@ const Page = () => {
                   placeholder="Contoh: 1000xxx"
                 />
               </div>
-              <div className="col-span-6 sm:col-span-3">
-                <label
-                  htmlFor="stock"
-                  className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
-                >
-                  Stok
-                </label>
-                <input
-                  type="number"
-                  name="stock"
-                  value={formData.stock}
-                  onChange={handleChange}
-                  id="stock"
-                  className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-cyan-600 focus:border-cyan-600 block w-full p-2.5 dark:bg-gray-900 dark:text-white"
-                  placeholder="Contoh: 50xxx..."
-                />
-              </div>
+              {id ? (
+                <div className="col-span-6 sm:col-span-3">
+                  <label
+                    htmlFor="stock"
+                    className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
+                  >
+                    Stok
+                  </label>
+                  <input
+                    type="number"
+                    name="stock"
+                    value={formData.stock}
+                    onChange={handleChange}
+                    id="stock"
+                    className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-cyan-600 focus:border-cyan-600 block w-full p-2.5 dark:bg-gray-900 dark:text-white"
+                    placeholder="Contoh: 50xxx..."
+                  />
+                  <div className="flex items-center my-1 gap-1">
+                    <InformationCircleIcon className="h-6 w-6 text-yellow-600" />
+                    <span className="text-[11px] dark:text-white-600">
+                      Stok akan diakumulasikan ke stok yang tersedia. Stok saat
+                      ini : <strong>{stockNow}</strong>
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="col-span-6 sm:col-span-3">
+                  <label
+                    htmlFor="stock"
+                    className="text-sm font-medium text-gray-900 block mb-2 dark:text-white"
+                  >
+                    Stok
+                  </label>
+                  <input
+                    type="number"
+                    name="stock"
+                    value={formData.stock}
+                    onChange={handleChange}
+                    id="stock"
+                    className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-cyan-600 focus:border-cyan-600 block w-full p-2.5 dark:bg-gray-900 dark:text-white"
+                    placeholder="Contoh: 50xxx..."
+                  />
+                </div>
+              )}
+
               <div className="col-span-6 sm:col-span-3">
                 <label
                   htmlFor="image"

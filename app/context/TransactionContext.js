@@ -46,6 +46,16 @@ function transactionReducer(state, action) {
       }
     }
 
+    // update qty untuk tr item
+    case "SET_QUANTITY": {
+      const updatedList = state.transactionList.map((item) =>
+        item.product_id === action.payload.product_id
+          ? { ...item, quantity: action.payload.quantity }
+          : item
+      );
+      return { ...state, transactionList: updatedList };
+    }
+
     case "REMOVE_SINGLE_TRANSACTION": {
       const existingIndex = state.transactionList.findIndex(
         (item) => item.product_id === action.payload
@@ -100,6 +110,20 @@ export function TransactionProvider({ children }) {
     () => ({
       ...state,
       addToTransaction: (product) => {
+        // Validasi stock tanpa alert - biarkan komponen yang handle alert
+        const existingTransaction = state.transactionList.find(
+          (item) => item.product_id === product.product_id
+        );
+
+        const currentQuantityInCart = existingTransaction
+          ? existingTransaction.quantity
+          : 0;
+
+        // Cek apakah masih ada stock tersedia
+        if (currentQuantityInCart >= product.stock) {
+          return false; // Return false jika stock tidak mencukupi
+        }
+
         // console.log("Menambahkan produk:", product.name);
         const hasDiscount =
           product.discount_amount && product.discount_amount > 0;
@@ -116,8 +140,41 @@ export function TransactionProvider({ children }) {
             discount_amount: hasDiscount ? product.discount_amount : null,
           },
         });
+
+        return true; // Return true jika berhasil ditambahkan
       },
 
+      // Function untuk cek stock tanpa menambah ke cart
+      checkStock: (product_id) => {
+        const product = state.productList.find(
+          (p) => p.product_id === product_id
+        );
+        const transaction = state.transactionList.find(
+          (t) => t.product_id === product_id
+        );
+
+        if (!product)
+          return { available: false, message: "Produk tidak ditemukan" };
+
+        const currentQuantity = transaction ? transaction.quantity : 0;
+        const availableStock = product.stock - currentQuantity;
+
+        return {
+          available: availableStock > 0,
+          availableStock,
+          currentQuantity,
+          totalStock: product.stock,
+          message:
+            availableStock > 0
+              ? `Stock tersedia: ${availableStock}`
+              : `Stock habis (Input : ${currentQuantity + 1}/ Tersedia : ${
+                  product.stock
+                })`,
+        };
+      },
+
+      setQuantity: (product_id, quantity) =>
+        dispatch({ type: "SET_QUANTITY", payload: { product_id, quantity } }),
       removeTransactionByName: (name) =>
         dispatch({ type: "REMOVE_TRANSACTION_BY_NAME", payload: name }),
       setFinalTransaction: (payload) =>

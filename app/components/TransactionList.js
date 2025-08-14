@@ -18,7 +18,9 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
   const router = useRouter();
   const {
     transactionList,
+    productList,
     addToTransaction,
+    checkStock,
     removeTransactionByName,
     removeSingleTransaction,
     setFinalTransaction,
@@ -58,12 +60,52 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
 
   const totalPages = Math.ceil(transactionList.length / itemsPerPage);
 
+  // Fungsi untuk validasi stock
+  const validateStock = () => {
+    const stockErrors = [];
+
+    for (const transactionItem of transactionList) {
+      const product = productList.find(
+        (p) => p.product_id === transactionItem.product_id
+      );
+
+      if (!product) {
+        stockErrors.push(`Produk ${transactionItem.name} tidak ditemukan`);
+        continue;
+      }
+
+      if (product.stock < transactionItem.quantity) {
+        stockErrors.push(
+          `Stock ${transactionItem.name} tidak cukup. Tersedia: ${product.stock}, Diinput: ${transactionItem.quantity}`
+        );
+      }
+    }
+
+    return stockErrors;
+  };
+
   const updateQuantity = (product_id, delta) => {
     const item = transactionList.find((t) => t.product_id === product_id);
     if (!item) return;
 
     if (delta > 0) {
-      addToTransaction(item);
+      // Cek stock dulu sebelum menambah
+      const stockInfo = checkStock(product_id);
+
+      if (!stockInfo.available) {
+        Swal.fire("⚠️ Stock Over Input", stockInfo.message, "warning");
+        return;
+      }
+
+      // Gunakan addToTransaction tanpa alert karena sudah dicek di atas
+      const success = addToTransaction(item);
+      if (!success) {
+        Swal.fire(
+          "⚠️ Stock Tidak Mencukupi",
+          `Stock ${item.name} sudah habis`,
+          "warning"
+        );
+      }
     } else {
       removeSingleTransaction(item.product_id);
     }
@@ -72,10 +114,21 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
   const handlePayment = async (params) => {
     if (!user_id) {
       return Swal.fire(
-        "❗️ Error",
+        "❌ Error",
         "User tidak ditemukan. Silakan login ulang.",
         "error"
       );
+    }
+
+    // VALIDASI STOCK SEBELUM PEMBAYARAN
+    const stockErrors = validateStock();
+    if (stockErrors.length > 0) {
+      return Swal.fire({
+        title: "❌ Stok Kurang",
+        html: stockErrors.map((error) => `• ${error}`).join("<br>"),
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     }
 
     let bayar;
@@ -86,7 +139,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
       const value = bayarRef.current?.value;
       if (!value || isNaN(value)) {
         return Swal.fire(
-          "❗️Error",
+          "❌Error",
           "Masukkan jumlah bayar yang valid!",
           "error"
         );
@@ -115,7 +168,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
 
       if (!confirm.isConfirmed) return;
     } else {
-      return Swal.fire("❗️Error", "Metode pembayaran belum dipilih!", "error");
+      return Swal.fire("❌Error", "Metode pembayaran belum dipilih!", "error");
     }
 
     const payload = {
@@ -262,6 +315,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
             type="number"
             placeholder="Masukkan jumlah bayar"
             className="border px-3 py-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-200 dark:focus:ring-yellow-600 dark:text-white"
+            id="masukkan_jumlah_bayar"
           />
 
           <button

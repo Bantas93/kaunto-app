@@ -18,14 +18,7 @@ import { useMemo } from "react";
 
 export default function ProductTableWrapper({ keyword }) {
   const { items, isLoading, refreshProducts } = useProducts();
-
-  // const filteredItems = useMemo(
-  //   () =>
-  //     items.filter((product) =>
-  //       product.name.toLowerCase().includes(keyword.toLowerCase())
-  //     ),
-  //   [items, keyword]
-  // );
+  // const minimumStock = 10;
   const filteredItems = useMemo(
     () =>
       Array.isArray(items)
@@ -145,20 +138,28 @@ export default function ProductTableWrapper({ keyword }) {
                       />
                     )}
                   </td>
-                  <td className="border px-4 py-2">{product.price}</td>
-                  <td className="border px-4 py-2">{product.stock}</td>
-                  {/* <td
-                className={`border px-4 py-2 font-semibold ${
-                  product.stock <= MINIMUM_STOCK ? "text-red-600" : ""
-                }`}
-              >
-                {product.stock}
-                {product.stock <= MINIMUM_STOCK && (
-                  <span className="ml-2 text-xs text-red-500 font-bold">
-                    ⚠️ Hampir habis
-                  </span>
-                )}
-              </td> */}
+                  <td className="border px-4 py-2 text-center">
+                    {product.price}
+                  </td>
+                  <td className="border px-4 py-2 text-center">
+                    {product.stock}
+                  </td>
+
+                  {/* <td className="relative text-center border font-semibold">
+                    {product.stock}
+                    <div className="absolute top-0 right-1 z-10">
+                      {product.stock === 0 ? (
+                        <span className="bg-red-500 text-white text-xs px-2 rounded-full font-semibold">
+                          ⚠️ Habis
+                        </span>
+                      ) : product.stock <= minimumStock ? (
+                        <span className="bg-yellow-500 text-white text-xs px-2 rounded-full font-semibold">
+                          ⚠️ Hampir habis
+                        </span>
+                      ) : null}
+                    </div>
+                  </td> */}
+
                   <td className="border px-4 py-2">{product.description}</td>
                   <td className="border px-2 py-2 text-center">
                     <div className="grid grid-cols-2 gap-2 justify-center items-center">

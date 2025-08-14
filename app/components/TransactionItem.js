@@ -1,12 +1,15 @@
 // app/components/TransactionItem.js
 
 import { motion } from "framer-motion";
+import { useTransaction } from "../context/TransactionContext";
 
 export default function TransactionItem({
   item,
   updateQuantity,
   removeTransactionByName,
 }) {
+  const { setQuantity } = useTransaction();
+
   return (
     <motion.div
       key={item.product_id}
@@ -25,14 +28,31 @@ export default function TransactionItem({
         >
           &times;
         </button>
-        <span className="dark:text-white">{item.name}</span>
+        <span className="dark:text-white select-none">{item.name}</span>
       </div>
 
-      <div className="text-center text-sm ">
+      <div className="text-center text-sm select-none">
         {item.original_price ? item.original_price : item.price}
       </div>
-      <div className="text-center text-sm">{item.discount_amount}</div>
-      <div className="text-center text-sm">{item.quantity}</div>
+      <div className="text-center text-sm select-none">
+        {item.discount_amount}
+      </div>
+
+      {/* QTY Input */}
+      <input
+        type="number"
+        min="1"
+        className="text-center text-sm w-14 border xl:ps-5 border-none focus:outline-none"
+        value={item.quantity}
+        onChange={(e) => {
+          const qty = parseInt(e.target.value, 10);
+          if (!isNaN(qty) && qty > 0) {
+            setQuantity(item.product_id, qty);
+          }
+        }}
+        id={item.product_id}
+      />
+
       <div className="flex justify-center gap-2 ">
         <button
           onClick={() => updateQuantity(item.product_id, -1)}
