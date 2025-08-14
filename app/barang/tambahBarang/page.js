@@ -253,6 +253,7 @@ const Page = () => {
                   placeholder="Contoh: Ayam penyet..."
                 />
               </div>
+
               <div className="col-span-6 sm:col-span-3">
                 <label
                   htmlFor="price"

@@ -11,8 +11,8 @@ export async function POST(request) {
     product_id: parseInt(formData.get("product_id")),
     name: formData.get("name"),
     sku: formData.get("sku"),
-    price: parseFloat(formData.get("price")),
-    stock: parseInt(formData.get("stock")),
+    price: parseFloat(formData.get("price", 10)),
+    stock: parseInt(formData.get("stock", 10)),
     description: formData.get("description") || null,
   };
 

@@ -10,11 +10,14 @@ export default function SortDropdown({
   return (
     <div className="flex flex-wrap gap-4 items-center ">
       <div>
-        <label className="mr-2 font-medium">Urut berdasarkan:</label>
+        <label className="mr-2 font-medium" htmlFor="urut_berdasarkan">
+          Urut berdasarkan:
+        </label>
         <select
           value={sortBy}
           onChange={(e) => onSortByChange(e.target.value)}
           className="border rounded px-2 py-1 dark:bg-gray-900 dark:text-white"
+          id="urut_berdasarkan"
         >
           <option value="tanggal">Tanggal</option>
           <option value="produk">Nama Produk</option>
@@ -25,6 +28,7 @@ export default function SortDropdown({
           value={sortOrder}
           onChange={(e) => onSortOrderChange(e.target.value)}
           className="border rounded px-2 py-1 dark:bg-gray-900 dark:text-white"
+          id="urut_order"
         >
           <option value="asc">A-Z</option>
           <option value="desc">Z-A</option>

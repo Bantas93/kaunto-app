@@ -262,6 +262,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
             type="number"
             placeholder="Masukkan jumlah bayar"
             className="border px-3 py-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-200 dark:focus:ring-yellow-600 dark:text-white"
+            id="masukkan_jumlah_bayar"
           />
 
           <button

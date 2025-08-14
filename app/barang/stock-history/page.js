@@ -120,11 +120,14 @@ export default function Page() {
 
               <div className="flex items-center gap-2">
                 <FunnelIcon className="h-5 w-5 text-gray-500" />
-                <label className="font-medium">Filter Waktu:</label>
+                <label className="font-medium" htmlFor="filter_waktu">
+                  Filter Waktu:
+                </label>
                 <select
                   value={filterMode}
                   onChange={(e) => setFilterMode(e.target.value)}
                   className="border px-2 py-1 rounded text-sm dark:bg-gray-900 dark:text-white"
+                  id="filter_waktu"
                 >
                   <option value="semua">Semua</option>
                   <option value="harian">Harian (Hari ini)</option>
@@ -141,6 +144,7 @@ export default function Page() {
                     value={customStart}
                     onChange={(e) => setCustomStart(e.target.value)}
                     className="border px-2 py-1 rounded text-sm"
+                    id="custom_start"
                   />
                   <span>-</span>
                   <input
@@ -148,6 +152,7 @@ export default function Page() {
                     value={customEnd}
                     onChange={(e) => setCustomEnd(e.target.value)}
                     className="border px-2 py-1 rounded text-sm"
+                    id="custom_end"
                   />
                 </div>
               )}
