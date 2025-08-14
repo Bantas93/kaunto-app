@@ -122,7 +122,7 @@ export default function Page() {
             <p className="text-center text-xs text-gray-400">
               Powered by{" "}
               <a
-                href="https://www.instagram.com/bantassyarif/?hl=id"
+                href="https://wa.me/6287780310045?text=halo%20bantas,%20saya%20baru%20saja%20melihat%20aplikasi%20kamu"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-blue-600 dark:hover:text-yellow-600"

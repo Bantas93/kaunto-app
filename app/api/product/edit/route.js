@@ -15,11 +15,10 @@ export async function POST(request) {
     stock: parseInt(formData.get("stock", 10)),
     description: formData.get("description") || null,
   };
-
   const currentDate = new Date();
 
   // Validasi
-  if (product.price <= 0 || product.stock <= 0) {
+  if (product.price <= 0 || product.stock < 0) {
     return NextResponse.json({
       success: false,
       message: "Harga/Stok tidak boleh input minus(-).",

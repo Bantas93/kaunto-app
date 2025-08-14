@@ -46,6 +46,16 @@ function transactionReducer(state, action) {
       }
     }
 
+    // update qty untuk tr item
+    case "SET_QUANTITY": {
+      const updatedList = state.transactionList.map((item) =>
+        item.product_id === action.payload.product_id
+          ? { ...item, quantity: action.payload.quantity }
+          : item
+      );
+      return { ...state, transactionList: updatedList };
+    }
+
     case "REMOVE_SINGLE_TRANSACTION": {
       const existingIndex = state.transactionList.findIndex(
         (item) => item.product_id === action.payload
@@ -117,7 +127,8 @@ export function TransactionProvider({ children }) {
           },
         });
       },
-
+      setQuantity: (product_id, quantity) =>
+        dispatch({ type: "SET_QUANTITY", payload: { product_id, quantity } }),
       removeTransactionByName: (name) =>
         dispatch({ type: "REMOVE_TRANSACTION_BY_NAME", payload: name }),
       setFinalTransaction: (payload) =>
