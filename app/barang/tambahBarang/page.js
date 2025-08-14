@@ -35,7 +35,7 @@ const Page = () => {
             name: data.name,
             sku: data.sku,
             price: data.price,
-            stock: data.stock,
+            stock: 0,
             description: data.description,
             image: null,
           });

@@ -42,7 +42,7 @@ export default function TransactionItem({
       <input
         type="number"
         min="1"
-        className="text-center text-sm w-14 border rounded border-none focus:outline-none"
+        className="text-center text-sm w-14 border xl:ps-5 border-none focus:outline-none"
         value={item.quantity}
         onChange={(e) => {
           const qty = parseInt(e.target.value, 10);
