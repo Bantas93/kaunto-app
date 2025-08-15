@@ -18,7 +18,7 @@ import { useMemo } from "react";
 
 export default function ProductTableWrapper({ keyword }) {
   const { items, isLoading, refreshProducts } = useProducts();
-  // const minimumStock = 10;
+  const minimumStock = 15;
   const filteredItems = useMemo(
     () =>
       Array.isArray(items)
@@ -130,7 +130,7 @@ export default function ProductTableWrapper({ keyword }) {
                       <p className="text-center">tidak ada</p>
                     ) : (
                       <img
-                        src={product.image || null} // base64 inline image
+                        src={product.image || null}
                         alt={product.name}
                         width={80}
                         height={80}
@@ -145,17 +145,24 @@ export default function ProductTableWrapper({ keyword }) {
                     {product.stock}
                   </td>
 
-                  {/* <td className="relative text-center border font-semibold">
+                  {/* Ping icon */}
+                  {/* <td className="relative text-center border z-10">
                     {product.stock}
-                    <div className="absolute top-0 right-1 z-10">
+                    <div className="absolute top-1 right-1">
                       {product.stock === 0 ? (
-                        <span className="bg-red-500 text-white text-xs px-2 rounded-full font-semibold">
-                          ⚠️ Habis
-                        </span>
+                        <div className="relative flex size-3">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75">
+                            ⚠️ Habis
+                          </span>
+                          <span className="relative inline-flex size-3 rounded-full bg-sky-500"></span>
+                        </div>
                       ) : product.stock <= minimumStock ? (
-                        <span className="bg-yellow-500 text-white text-xs px-2 rounded-full font-semibold">
-                          ⚠️ Hampir habis
-                        </span>
+                        <div className="relative flex size-3">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75">
+                            ⚠️ Hampir habis
+                          </span>
+                          <span className="relative inline-flex size-3 rounded-full bg-yellow-500"></span>
+                        </div>
                       ) : null}
                     </div>
                   </td> */}
@@ -176,7 +183,8 @@ export default function ProductTableWrapper({ keyword }) {
 
                       <button
                         onClick={() => handleDelete(product)}
-                        className="bg-red-500 hover:bg-red-600 p-1 rounded text-white"
+                        className="bg-red-500 hover:bg-red-700 p-1 hover:cursor-pointer rounded text-white"
+                        title="Hapus"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
@@ -186,7 +194,7 @@ export default function ProductTableWrapper({ keyword }) {
                           pathname: "/barang/stock-history",
                           query: { id: product.product_id, name: product.name },
                         }}
-                        title="Stok Histori"
+                        title="Histori Stok"
                         className="bg-gray-300 hover:bg-gray-400 p-1 rounded text-gray-800"
                       >
                         <ArchiveBoxIcon className="w-4 h-4" />
@@ -197,7 +205,7 @@ export default function ProductTableWrapper({ keyword }) {
                           pathname: "/transaksi/transaction-history",
                           query: { id: product.product_id, name: product.name },
                         }}
-                        title="Transaksi Histori"
+                        title="Histori Transaksi"
                         className="bg-yellow-500 hover:bg-gray-400 p-1 rounded text-gray-800"
                       >
                         <ReceiptPercentIcon className="w-4 h-4" />

@@ -22,7 +22,7 @@ export default function TransactionItem({
       <div className="col-span-2 flex items-center gap-2 text-sm text-gray-800  ">
         <button
           onClick={() => removeTransactionByName(item.name)}
-          className="hover:pointer text-red-600 hover:text-red-800 font-bold text-lg px-2"
+          className="hover:pointer text-red-600 hover:text-red-800 font-bold text-lg px-2 dark:text-yellow-600"
           aria-label="Hapus Produk"
           title="Hapus Produk"
         >
@@ -39,10 +39,11 @@ export default function TransactionItem({
       </div>
 
       {/* QTY Input */}
+      {/* Untuk hilangkan btn inc dan dec pada form input : [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0 */}
       <input
         type="number"
         min="1"
-        className="text-center text-sm w-14 border xl:ps-5 border-none focus:outline-none"
+        className="text-sm w-14 border lg:ps-4 xl:ps-8 border-none focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
         value={item.quantity}
         onChange={(e) => {
           const qty = parseInt(e.target.value, 10);
@@ -56,14 +57,14 @@ export default function TransactionItem({
       <div className="flex justify-center gap-2 ">
         <button
           onClick={() => updateQuantity(item.product_id, -1)}
-          className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition duration-150 ease-in-out active:scale-95"
+          className="hover:cursor-pointer dark:bg-yellow-600 darl:text-black bg-red-500 text-white px-2 py-1 rounded dark:hover:bg-yellow-700 hover:bg-red-700 transition duration-150 ease-in-out active:scale-95"
           aria-label="Kurangi"
         >
           -
         </button>
         <button
           onClick={() => updateQuantity(item.product_id, 1)}
-          className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition duration-150 ease-in-out active:scale-95"
+          className="hover:cursor-pointer dark:bg-yellow-600 darl:text-black bg-green-500 text-white px-2 py-1 rounded dark:hover:bg-yellow-700 hover:bg-green-700 transition duration-150 ease-in-out active:scale-95"
           aria-label="Tambah"
         >
           +

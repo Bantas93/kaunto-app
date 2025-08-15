@@ -4,115 +4,8 @@
 import { supabase } from "./supabase";
 
 /* =========================
-   PRODUCTS
+      PRODUCTS
 ========================= */
-
-// export const getProducts = async function () {
-//   try {
-//     const { data, error } = await supabase
-//       .from("products")
-//       .select(
-//         `
-//         *,
-//         product_image(image),
-//         product_discount(discount_amount, original_price)
-//       `
-//       )
-//       .order("name", { ascending: true });
-
-//     if (error) throw error;
-
-//     return data.map((row) => {
-//       let image = null;
-
-//       if (row.product_image?.length && row.product_image[0].image) {
-//         try {
-//           const hex = row.product_image[0].image;
-
-//           // Pastikan string diawali \x
-//           if (typeof hex === "string" && hex.startsWith("\\x")) {
-//             const binary = Buffer.from(hex.slice(2), "hex"); // buang \x lalu decode hex
-//             const base64 = binary.toString("base64");
-//             image = `data:image/jpeg;base64,${base64}`;
-//           }
-//         } catch (e) {
-//           console.error("Gagal decode image bytea:", e.message);
-//         }
-//       }
-
-//       return {
-//         ...row,
-//         image,
-//         discount_amount: row.product_discount?.[0]?.discount_amount || null,
-//         original_price: row.product_discount?.[0]?.original_price || null,
-//       };
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     throw new Error("Products could not be loaded");
-//   }
-// };
-
-// export const getProducts = async function () {
-//   try {
-//     // Ambil semua produk
-//     const { data: products, error: prodError } = await supabase
-//       .from("products")
-//       .select("*")
-//       .order("name", { ascending: true });
-
-//     if (prodError) throw prodError;
-
-//     // Ambil semua gambar
-//     const { data: images, error: imgError } = await supabase
-//       .from("product_image")
-//       .select("product_id, image_url");
-
-//     if (imgError) throw imgError;
-
-//     // Ambil semua diskon
-//     const { data: discounts, error: discError } = await supabase
-//       .from("product_discount")
-//       .select("product_id, discount_amount, original_price");
-
-//     if (discError) throw discError;
-
-//     // Gabungkan hasil seperti LEFT JOIN MySQL
-//     const result = products.map((p) => {
-//       // Cari gambar produk
-//       let image = null;
-//       const imgRow = images.find((i) => i.product_id === p.product_id);
-//       if (imgRow?.image) {
-//         try {
-//           const hex = imgRow.image;
-//           if (typeof hex === "string" && hex.startsWith("\\x")) {
-//             const binary = Buffer.from(hex.slice(2), "hex");
-//             const base64 = binary.toString("base64");
-//             image = `data:image/jpeg;base64,${base64}`;
-//           }
-//         } catch (e) {
-//           console.error("Gagal decode image bytea:", e.message);
-//         }
-//       }
-
-//       // Cari diskon produk
-//       const discRow =
-//         discounts.find((d) => d.product_id === p.product_id) || {};
-
-//       return {
-//         ...p,
-//         image,
-//         discount_amount: discRow.discount_amount ?? null,
-//         original_price: discRow.original_price ?? null,
-//       };
-//     });
-
-//     return result;
-//   } catch (error) {
-//     console.error(error);
-//     throw new Error("Products could not be loaded");
-//   }
-// };
 
 export const getProducts = async function () {
   try {
@@ -312,7 +205,7 @@ export async function getProductById(product_id) {
 }
 
 /* =========================
-   USERS
+    USERS
 ========================= */
 export const getUsers = async function () {
   try {
@@ -354,7 +247,7 @@ export const deleteUser = async (user_id) => {
 };
 
 /* =========================
-   STOCK HISTORY
+    STOCK HISTORY
 ========================= */
 export const getAllStockHistory = async function () {
   try {
@@ -458,7 +351,7 @@ export const getStockHistoryByProductId = async function (productId) {
 };
 
 /* =========================
-   TRANSACTIONS
+    TRANSACTIONS
 ========================= */
 export const getTransactionNumber = async () => {
   try {
@@ -625,42 +518,6 @@ export async function saveTransaction(payload) {
 /* =========================
    DASHBOARD DATA
 ========================= */
-// export const getAllData = async () => {
-//   try {
-//     const tables = [
-//       supabase.from("products").select("*"),
-//       supabase.from("transactions").select("*"),
-//       supabase.from("transaction_detail").select("subtotal"),
-//       supabase.from("imported_stock_history").select("*"),
-//       supabase.from("product_discount").select("*"),
-//     ];
-
-//     const [products, transactions, transDetail, importedStock, discounts] =
-//       await Promise.all(tables);
-
-//     const turnoverTotal = transDetail.data.reduce(
-//       (sum, td) => sum + (td.subtotal || 0),
-//       0
-//     );
-
-//     return [
-//       {
-//         stock_available: products.data.length,
-//         transaction_total: transactions.data.length,
-//         turnover_transaction: turnoverTotal,
-//         turnover_transaction_today: 11111,
-//         turnover_transaction_before: 22222,
-//         transaction_today: 33333,
-//         transaction_before: 44444,
-//         imported_stock_total: importedStock.data.length,
-//         product_discount: discounts.data.length,
-//       },
-//     ];
-//   } catch (err) {
-//     console.error(err);
-//     throw new Error("Products could not be loaded");
-//   }
-// };
 
 export const getAllData = async () => {
   try {

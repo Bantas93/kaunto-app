@@ -1,7 +1,7 @@
 // app/transaksi/result/page.js
 "use client";
 
-import BackButton from "@/app/components/BackButton";
+// import BackButton from "@/app/components/BackButton";
 import { useTransaction } from "@/app/context/TransactionContext";
 
 export default function Page() {
@@ -45,7 +45,7 @@ export default function Page() {
   return (
     <div className="p-4">
       <div className="text-center p-4 print:hidden">
-        <BackButton className="mb-4" />
+        {/* <BackButton className="mb-4" /> */}
       </div>
 
       <div className="flex justify-center print:block">

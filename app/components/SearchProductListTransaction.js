@@ -9,7 +9,7 @@ export default function SearchProductListTransaction() {
 
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-1">
         <input
           type="text"
           placeholder="Cari produk..."

@@ -14,11 +14,11 @@ export default function PaymentQRCode({ totalAmount, handlePayment }) {
   )}`;
 
   return (
-    <div className="mt-4 text-center ">
-      <p className="text-sm text-gray-600 mb-2 dark:text-white">
-        Silakan scan QR untuk pembayaran ke rekening:
+    <div className="mt-4 text-center flex flex-row justify-center items-center gap-4">
+      <p className="text-sm text-gray-600 mb-2 dark:text-white m-2">
+        Ini dummy ... Dalam tahap pengembangan ...
       </p>
-      <div className="inline-block border p-3 bg-white shadow rounded dark:bg-yellow-600">
+      <div className="border bg-white shadow rounded dark:bg-yellow-600 flex">
         <Canvas
           text={qrContent}
           options={{
@@ -32,17 +32,17 @@ export default function PaymentQRCode({ totalAmount, handlePayment }) {
             },
           }}
         />
-        <p className="text-sm mt-2 text-gray-700">
+        <div className="text-sm mt-2 text-gray-700 text-start flex flex-col px-3">
           Bank: {namaBank} <br />
           No. Rek: {rekeningTujuan} <br />
-          Total: <strong>Rp.{totalAmount.toLocaleString()}</strong>
-        </p>
-        <button
-          onClick={() => handlePayment(Math.round(totalAmount))}
-          className="hover:font-bold"
-        >
-          Selesai Scan
-        </button>
+          Total: Rp.{totalAmount.toLocaleString()}
+          <button
+            onClick={() => handlePayment(Math.round(totalAmount))}
+            className="hover:cursor-pointer border rounded mx-1 mt-12 hover:bg-gray-600 hover:text-white transition-all duration-100"
+          >
+            Selesai Scan
+          </button>
+        </div>
       </div>
     </div>
   );
