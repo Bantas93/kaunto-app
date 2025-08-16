@@ -9,7 +9,6 @@ import { useTransaction } from "../context/TransactionContext";
 import PaymentQRCode from "./PaymentQRCode";
 import PaymentSection from "./PaymentSection";
 import TransactionItem from "./TransactionItem";
-import TransactionPagination from "./TransactionPagination";
 import { useUser } from "../context/UserContext";
 
 export default function TransactionList({ trNo, resetOnLoad = false }) {
@@ -29,8 +28,6 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
 
   const bayarRef = useRef();
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  const itemsPerPage = 3;
-  const [currentPage, setCurrentPage] = useState(1);
   const clearedRef = useRef(false);
 
   useEffect(() => {
@@ -52,13 +49,6 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
   const taxRate = 0.1;
   const taxAmount = totalAmount * taxRate;
   const totalWithTax = totalAmount + taxAmount;
-
-  const paginatedTransactions = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return transactionList.slice(start, start + itemsPerPage);
-  }, [transactionList, currentPage]);
-
-  const totalPages = Math.ceil(transactionList.length / itemsPerPage);
 
   // Fungsi untuk validasi stock
   const validateStock = () => {
@@ -236,9 +226,9 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
 
   return (
     <section>
-      {paginatedTransactions.length > 0 ? (
-        <div className="space-y-2">
-          {paginatedTransactions.map((item) => (
+      {transactionList.length > 0 ? (
+        <div className="space-y-2 max-h-40 overflow-y-auto">
+          {transactionList.map((item) => (
             <TransactionItem
               key={item.product_id}
               item={item}
@@ -251,14 +241,6 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
         <p className="text-center text-gray-500 italic mt-4">
           Belum ada produk dipilih
         </p>
-      )}
-
-      {totalPages > 1 && (
-        <TransactionPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          setCurrentPage={setCurrentPage}
-        />
       )}
 
       <div className="grid grid-cols-2">
@@ -279,9 +261,9 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
                   }
                 });
               }}
-              className="mt-4 py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition"
+              className="ms-2 mt-4 py-2 px-4 bg-red-500 dark:bg-yellow-600 text-white rounded-full dark:hover:bg-yellow-700 hover:bg-red-700 hover:cursor-pointer dark:text-black font-semibold transition"
             >
-              Reset Transaksi
+              Reset
             </button>
           )}
         </div>
@@ -291,7 +273,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
         </div>
       </div>
 
-      <div className="text-right mt-2 font-bold text-gray-800 dark:text-white">
+      <div className="text-right mt-2 font-bold text-gray-800 dark:text-white text-sm lg:text-md">
         Jumlah yang harus dibayar :
         <span className="text-2xl px-2 py-2 border-2 rounded text-white bg-red-500 dark:bg-yellow-600 dark:text-black">
           Rp.{Math.round(totalWithTax).toLocaleString()}
@@ -320,7 +302,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
 
           <button
             onClick={handlePayment}
-            className="bg-green-600 text-white py-2 rounded hover:bg-green-700 transition duration-200 ease-in-out transform hover:scale-105 active:scale-95 dark:bg-yellow-600 dark:text-black dark:hover:bg-yellow-700"
+            className="bg-green-600 text-white py-2 rounded hover:bg-green-700 transition duration-200 ease-in-out transform hover:scale-95  dark:bg-yellow-600 dark:text-black dark:hover:bg-yellow-700 font-bold"
           >
             Bayar
           </button>

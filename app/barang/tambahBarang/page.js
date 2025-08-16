@@ -170,9 +170,9 @@ const Page = () => {
   };
 
   return (
-    <div className="p-4 mx-[150px]">
+    <div className="p-4 w-full">
       <div className="bg-white border rounded-lg shadow relative dark:bg-gray-900 dark:text-white">
-        <BackButton className="m-1" />
+        <BackButton className="m-2" />
         <div className="flex items-start justify-between p-2 rounded-t">
           <h3 className="text-xl font-semibold">
             {id ? "Edit produk" : "Tambah produk"}
