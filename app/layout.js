@@ -5,7 +5,7 @@ import AuthLayout from "@/app/components/AuthLayout";
 export const metadata = {
   title: {
     template: "%s | K App",
-    default: "Dashboard | K App",
+    default: "K App",
   },
 };
 export default function RootLayout({ children }) {
