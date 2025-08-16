@@ -41,7 +41,7 @@ export default function Page() {
               <div className="col-start-3 text-center">Harga</div>
               <div className="col-start-4 text-center">Diskon</div>
               <div className="col-start-5 text-center">Qty</div>
-              <div className=" col-span-2 text-right">Total</div>
+              <div className="col-span-3 pe-4 lg:pe-8 text-right">Total</div>
             </div>
             <TransactionList trNo={trNo} resetOnLoad />
           </div>

@@ -261,7 +261,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
                   }
                 });
               }}
-              className="mt-4 py-2 px-4 bg-red-500 dark:bg-yellow-600 text-white rounded-full dark:hover:bg-yellow-700 hover:bg-red-700 hover:cursor-pointer dark:text-black font-semibold transition"
+              className="ms-2 mt-4 py-2 px-4 bg-red-500 dark:bg-yellow-600 text-white rounded-full dark:hover:bg-yellow-700 hover:bg-red-700 hover:cursor-pointer dark:text-black font-semibold transition"
             >
               Reset
             </button>
@@ -273,7 +273,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
         </div>
       </div>
 
-      <div className="text-right mt-2 font-bold text-gray-800 dark:text-white">
+      <div className="text-right mt-2 font-bold text-gray-800 dark:text-white text-sm lg:text-md">
         Jumlah yang harus dibayar :
         <span className="text-2xl px-2 py-2 border-2 rounded text-white bg-red-500 dark:bg-yellow-600 dark:text-black">
           Rp.{Math.round(totalWithTax).toLocaleString()}

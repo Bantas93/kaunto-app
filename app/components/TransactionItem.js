@@ -43,7 +43,7 @@ export default function TransactionItem({
       <input
         type="number"
         min="1"
-        className="text-sm w-14 border lg:ps-4 xl:ps-8 border-none focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
+        className="text-sm w-14 border ps-3 lg:ps-4 xl:ps-8 border-none focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
         value={item.quantity}
         onChange={(e) => {
           const qty = parseInt(e.target.value, 10);

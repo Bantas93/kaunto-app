@@ -66,7 +66,9 @@ export default function Header({ user = null }) {
   return (
     <header className="dark:bg-gray-900 dark:text-white sticky top-0 z-40 drop-shadow-md bg-white">
       <div className="max-w-screen mx-auto xl:px-2 xl:py-2 lg:px-2 lg:py-2 md:px-2 md:py-2 flex items-center justify-between">
-        <h1 className="text-lg font-semibold lg:w-lg sm:ps-2">K-App</h1>
+        <h1 className="text-lg font-semibold lg:w-lg sm:ps-4 md:ps-2 ps-5">
+          K-App
+        </h1>
 
         {/* Burger button (hanya muncul di layar kecil) */}
         <button
@@ -103,7 +105,7 @@ export default function Header({ user = null }) {
             menuOpen ? "block" : "hidden"
           } absolute top-full left-0 w-full bg-white dark:bg-gray-900 lg:bg-transparent lg:dark:bg-transparent lg:static lg:block`}
         >
-          <ul className="flex flex-col lg:justify-between lg:flex-row lg:space-x-6 items-center lg:text-sm md:text-xs font-medium p-4 lg:p-0 lg:gap-2">
+          <ul className="flex flex-col  md:justify-between md:p-0 lg:flex-row lg:space-x-6 items-center lg:text-sm md:text-xs font-medium p-4 lg:p-0 lg:gap-2">
             {navItems
               .filter((item) => !item.role || item.role === role)
               .map(({ label, href, activeMatch, activeClass }) => {
