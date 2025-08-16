@@ -24,13 +24,13 @@ export default function Page() {
   }, []);
   return (
     <div className="bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="flex flex-col lg:flex-row md:flex-row md:gap-1 lg:gap-4">
-        <div className="w-full lg:w-1/2 bg-white dark:bg-gray-900 dark:drop-shadow-white rounded-xl drop-shadow-md lg:p-4 md:p-2">
+      <div className="flex flex-col lg:flex-row md:flex-row md:gap-1 lg:gap-4 gap-4">
+        <div className="w-full lg:w-1/2 bg-white dark:bg-gray-900 dark:drop-shadow-white rounded-xl drop-shadow-md lg:p-4 md:p-2 p-1">
           <SearchProductListTransaction />
         </div>
         <div className="w-full lg:w-1/2 bg-white rounded-xl drop-shadow-md lg:p-4 md:p-2 dark:bg-gray-900 dark:drop-shadow-white">
           {/* Kirim prop agar di-clear di TransactionList */}
-          <div className="flex flex-col dark:bg-gray-900  ">
+          <div className="flex flex-col dark:bg-gray-900 md:-p-1 lg:p-0 p-1 rounded-full ">
             <header className="mb-4">
               <h2 className="text-sm font-semibold text-gray-800 dark:text-white">
                 {trNo}
