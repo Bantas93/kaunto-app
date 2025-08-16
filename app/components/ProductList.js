@@ -98,13 +98,13 @@ export default function ProductList({ keyword }) {
                     )}
                   </div>
                   {/* cube stock */}
-                  <div className="absolute flex justify-end items-center gap-0.5 -right-0.5 pe-2 pt-1.5 md:pt-1 md:text-[12px] dark:text-white text-[8px]">
+                  <div className="absolute flex justify-end items-center gap-0.5 -right-0.5 pe-2 pt-1.5 md:pt-2 md:text-[12px] dark:text-white text-[8px]">
                     <CubeIcon className="md:h-4 md:w-4 h-2 w-2" />
                     {product.stock - stockInfo.currentQuantity}
                   </div>
                   <div className="p-1.5 text-left dark:bg-gray-900 dark:text-yellow-600">
                     <h6
-                      className={`font-semibold truncate text-[10px] ${
+                      className={`font-semibold truncate text-[10px] md:text-sm ${
                         isOutOfStock ? "text-gray-500" : ""
                       }`}
                     >
