@@ -275,7 +275,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
 
       <div className="text-right mt-2 font-bold text-gray-800 dark:text-white text-sm lg:text-md">
         Jumlah yang harus dibayar :
-        <span className="text-2xl px-2 py-2 border-2 rounded text-white bg-red-500 dark:bg-yellow-600 dark:text-black">
+        <span className="text-2xl px-2 py-2 dark:text-yellow-600">
           Rp.{Math.round(totalWithTax).toLocaleString()}
         </span>
       </div>
@@ -302,7 +302,7 @@ export default function TransactionList({ trNo, resetOnLoad = false }) {
 
           <button
             onClick={handlePayment}
-            className="bg-green-600 text-white py-2 rounded hover:bg-green-700 transition duration-200 ease-in-out transform hover:scale-95  dark:bg-yellow-600 dark:text-black dark:hover:bg-yellow-700 font-bold"
+            className="bg-green-600 text-white py-2 rounded hover:bg-green-700 transition duration-200 ease-in-out transform hover:scale-95  dark:bg-yellow-600 dark:text-black dark:hover:bg-yellow-700 font-bold hover:cursor-pointer"
           >
             Bayar
           </button>
