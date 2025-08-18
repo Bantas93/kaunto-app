@@ -519,11 +519,95 @@ export async function saveTransaction(payload) {
    DASHBOARD DATA
 ========================= */
 
-export const getAllData = async () => {
+// export const getAllData = async () => {
+//   try {
+//     const tables = [
+//       supabase.from("products").select("*"),
+//       supabase.from("transactions").select("*"), // pastikan ada kolom created_at
+//       supabase.from("transaction_detail").select("subtotal, transaction_id"),
+//       supabase.from("imported_stock_history").select("*"),
+//       supabase.from("product_discount").select("*"),
+//     ];
+
+//     const [products, transactions, transDetail, importedStock, discounts] =
+//       await Promise.all(tables);
+
+//     // Waktu untuk filter
+//     const now = new Date();
+//     const startToday = new Date(
+//       now.getFullYear(),
+//       now.getMonth(),
+//       now.getDate()
+//     );
+//     const endToday = new Date(startToday);
+//     endToday.setHours(23, 59, 59, 999);
+
+//     const startYesterday = new Date(startToday);
+//     startYesterday.setDate(startYesterday.getDate() - 1);
+//     const endYesterday = new Date(startYesterday);
+//     endYesterday.setHours(23, 59, 59, 999);
+
+//     // Filter transaksi
+//     const todayTransactions = transactions.data.filter((t) => {
+//       const tDate = new Date(t.created_date);
+//       return tDate >= startToday && tDate <= endToday;
+//     });
+
+//     const yesterdayTransactions = transactions.data.filter((t) => {
+//       const tDate = new Date(t.created_date);
+//       return tDate >= startYesterday && tDate <= endYesterday;
+//     });
+
+//     // Hitung omzet hari ini & kemarin
+//     const turnoverToday = transDetail.data
+//       .filter((td) =>
+//         todayTransactions.some((t) => t.transaction_id === td.transaction_id)
+//       )
+//       .reduce((sum, td) => sum + (td.subtotal || 0), 0);
+
+//     const turnoverYesterday = transDetail.data
+//       .filter((td) =>
+//         yesterdayTransactions.some(
+//           (t) => t.transaction_id === td.transaction_id
+//         )
+//       )
+//       .reduce((sum, td) => sum + (td.subtotal || 0), 0);
+
+//     // Omzet total semua transaksi
+//     const turnoverTotal = transDetail.data.reduce(
+//       (sum, td) => sum + (td.subtotal || 0),
+//       0
+//     );
+
+//     return [
+//       {
+//         stock_available: products.data.length,
+//         transaction_total: transactions.data.length,
+//         turnover_transaction: turnoverTotal,
+//         turnover_transaction_today: turnoverToday,
+//         turnover_transaction_before: turnoverYesterday,
+//         transaction_today: todayTransactions.length,
+//         transaction_before: yesterdayTransactions.length,
+//         imported_stock_total: importedStock.data.length,
+//         product_discount: discounts.data.length,
+//       },
+//     ];
+//   } catch (err) {
+//     console.error(err);
+//     throw new Error("Products could not be loaded");
+//   }
+// };
+
+export const getAllData = async (
+  customStartDate = null,
+  customEndDate = null
+) => {
   try {
+    console.log("getAllData called with:", { customStartDate, customEndDate });
+
     const tables = [
       supabase.from("products").select("*"),
-      supabase.from("transactions").select("*"), // pastikan ada kolom created_at
+      supabase.from("transactions").select("*"),
       supabase.from("transaction_detail").select("subtotal, transaction_id"),
       supabase.from("imported_stock_history").select("*"),
       supabase.from("product_discount").select("*"),
@@ -532,8 +616,16 @@ export const getAllData = async () => {
     const [products, transactions, transDetail, importedStock, discounts] =
       await Promise.all(tables);
 
+    // DEBUG: Log sample data
+    console.log("Sample product:", products.data[0]);
+    console.log("Sample transaction:", transactions.data[0]);
+    console.log("Total products:", products.data.length);
+    console.log("Total transactions:", transactions.data.length);
+
     // Waktu untuk filter
     const now = new Date();
+
+    // Hari ini
     const startToday = new Date(
       now.getFullYear(),
       now.getMonth(),
@@ -542,58 +634,195 @@ export const getAllData = async () => {
     const endToday = new Date(startToday);
     endToday.setHours(23, 59, 59, 999);
 
+    // Kemarin
     const startYesterday = new Date(startToday);
     startYesterday.setDate(startYesterday.getDate() - 1);
     const endYesterday = new Date(startYesterday);
     endYesterday.setHours(23, 59, 59, 999);
 
-    // Filter transaksi
-    const todayTransactions = transactions.data.filter((t) => {
-      const tDate = new Date(t.created_date);
-      return tDate >= startToday && tDate <= endToday;
+    // Mingguan (7 hari terakhir)
+    const startWeekly = new Date(now);
+    startWeekly.setDate(startWeekly.getDate() - 7);
+    startWeekly.setHours(0, 0, 0, 0);
+    const endWeekly = new Date(now);
+    endWeekly.setHours(23, 59, 59, 999);
+
+    // Bulanan (30 hari terakhir)
+    const startMonthly = new Date(now);
+    startMonthly.setDate(startMonthly.getDate() - 30);
+    startMonthly.setHours(0, 0, 0, 0);
+    const endMonthly = new Date(now);
+    endMonthly.setHours(23, 59, 59, 999);
+
+    // Custom date range
+    const startCustom = customStartDate ? new Date(customStartDate) : null;
+    const endCustom = customEndDate ? new Date(customEndDate) : null;
+    if (endCustom) endCustom.setHours(23, 59, 59, 999);
+
+    console.log("Date ranges:", {
+      today: { start: startToday, end: endToday },
+      yesterday: { start: startYesterday, end: endYesterday },
+      weekly: { start: startWeekly, end: endWeekly },
+      monthly: { start: startMonthly, end: endMonthly },
+      custom:
+        startCustom && endCustom
+          ? { start: startCustom, end: endCustom }
+          : null,
     });
 
-    const yesterdayTransactions = transactions.data.filter((t) => {
-      const tDate = new Date(t.created_date);
-      return tDate >= startYesterday && tDate <= endYesterday;
-    });
+    // Helper function untuk filter berdasarkan tanggal
+    const filterByDateRange = (items, dateField, startDate, endDate) => {
+      const filtered = items.filter((item) => {
+        const itemDate = new Date(item[dateField]);
+        const isValid = itemDate >= startDate && itemDate <= endDate;
+        return isValid;
+      });
 
-    // Hitung omzet hari ini & kemarin
-    const turnoverToday = transDetail.data
-      .filter((td) =>
-        todayTransactions.some((t) => t.transaction_id === td.transaction_id)
-      )
-      .reduce((sum, td) => sum + (td.subtotal || 0), 0);
+      console.log(
+        `Filtered ${items.length} items to ${
+          filtered.length
+        } for ${dateField} between ${startDate.toISOString()} and ${endDate.toISOString()}`
+      );
+      return filtered;
+    };
 
-    const turnoverYesterday = transDetail.data
-      .filter((td) =>
-        yesterdayTransactions.some(
-          (t) => t.transaction_id === td.transaction_id
-        )
-      )
-      .reduce((sum, td) => sum + (td.subtotal || 0), 0);
+    // Helper function untuk hitung omzet berdasarkan transaksi
+    const calculateTurnover = (filteredTransactions) => {
+      const transactionIds = filteredTransactions.map((t) => t.transaction_id);
+      const relevantDetails = transDetail.data.filter((td) =>
+        transactionIds.includes(td.transaction_id)
+      );
 
-    // Omzet total semua transaksi
+      const turnover = relevantDetails.reduce(
+        (sum, td) => sum + (td.subtotal || 0),
+        0
+      );
+      console.log(
+        `Calculated turnover: ${turnover} from ${relevantDetails.length} transaction details`
+      );
+      return turnover;
+    };
+
+    // Helper function untuk hitung produk berdasarkan tanggal
+    const calculateProductCount = (startDate, endDate) => {
+      // Berdasarkan schema, products menggunakan created_date
+      if (products.data.length > 0) {
+        const filtered = filterByDateRange(
+          products.data,
+          "created_date", // Confirmed from schema
+          startDate,
+          endDate
+        );
+        return filtered.length;
+      }
+      return 0;
+    };
+
+    // Filter transaksi berdasarkan periode - menggunakan created_date (confirmed from schema)
+    const todayTransactions = filterByDateRange(
+      transactions.data,
+      "created_date", // Confirmed from schema
+      startToday,
+      endToday
+    );
+
+    const yesterdayTransactions = filterByDateRange(
+      transactions.data,
+      "created_date",
+      startYesterday,
+      endYesterday
+    );
+
+    const weeklyTransactions = filterByDateRange(
+      transactions.data,
+      "created_date",
+      startWeekly,
+      endWeekly
+    );
+
+    const monthlyTransactions = filterByDateRange(
+      transactions.data,
+      "created_date",
+      startMonthly,
+      endMonthly
+    );
+
+    const customTransactions =
+      startCustom && endCustom
+        ? filterByDateRange(
+            transactions.data,
+            "created_date",
+            startCustom,
+            endCustom
+          )
+        : [];
+
+    // Hitung omzet per periode
     const turnoverTotal = transDetail.data.reduce(
       (sum, td) => sum + (td.subtotal || 0),
       0
     );
+    const turnoverToday = calculateTurnover(todayTransactions);
+    const turnoverYesterday = calculateTurnover(yesterdayTransactions);
+    const turnoverWeekly = calculateTurnover(weeklyTransactions);
+    const turnoverMonthly = calculateTurnover(monthlyTransactions);
+    const turnoverCustom =
+      startCustom && endCustom ? calculateTurnover(customTransactions) : 0;
 
-    return [
-      {
-        stock_available: products.data.length,
-        transaction_total: transactions.data.length,
-        turnover_transaction: turnoverTotal,
-        turnover_transaction_today: turnoverToday,
-        turnover_transaction_before: turnoverYesterday,
-        transaction_today: todayTransactions.length,
-        transaction_before: yesterdayTransactions.length,
-        imported_stock_total: importedStock.data.length,
-        product_discount: discounts.data.length,
-      },
-    ];
+    // Hitung produk tersedia per periode
+    const stockAvailableTotal = products.data.length;
+    const stockAvailableToday = calculateProductCount(startToday, endToday);
+    const stockAvailableYesterday = calculateProductCount(
+      startYesterday,
+      endYesterday
+    );
+    const stockAvailableWeekly = calculateProductCount(startWeekly, endWeekly);
+    const stockAvailableMonthly = calculateProductCount(
+      startMonthly,
+      endMonthly
+    );
+    const stockAvailableCustom =
+      startCustom && endCustom
+        ? calculateProductCount(startCustom, endCustom)
+        : 0;
+
+    // Final result
+    const result = {
+      // Data existing
+      stock_available: stockAvailableTotal,
+      transaction_total: transactions.data.length,
+      turnover_transaction: turnoverTotal,
+      turnover_transaction_today: turnoverToday,
+      turnover_transaction_before: turnoverYesterday,
+      transaction_today: todayTransactions.length,
+      transaction_before: yesterdayTransactions.length,
+      imported_stock_total: importedStock.data.length,
+      product_discount: discounts.data.length,
+
+      // Data baru untuk filter
+      // Omzet
+      turnover_transaction_weekly: turnoverWeekly,
+      turnover_transaction_monthly: turnoverMonthly,
+      turnover_transaction_custom: turnoverCustom,
+
+      // Transaksi
+      transaction_weekly: weeklyTransactions.length,
+      transaction_monthly: monthlyTransactions.length,
+      transaction_custom: customTransactions.length,
+
+      // Produk tersedia
+      stock_available_today: stockAvailableToday,
+      stock_available_yesterday: stockAvailableYesterday,
+      stock_available_weekly: stockAvailableWeekly,
+      stock_available_monthly: stockAvailableMonthly,
+      stock_available_custom: stockAvailableCustom,
+    };
+
+    console.log("Final getAllData result:", result);
+
+    return [result];
   } catch (err) {
-    console.error(err);
+    console.error("Error in getAllData:", err);
     throw new Error("Products could not be loaded");
   }
 };
